@@ -1,39 +1,24 @@
 # kduck-core
 
-#### 介绍
-{**以下是码云平台说明，您可以替换此简介**
-码云是 OSCHINA 推出的基于 Git 的代码托管平台（同时支持 SVN）。专为开发者提供稳定、高效、安全的云端软件开发协作平台
-无论是个人、团队、或是企业，都能够用码云实现代码托管、项目管理、协作开发。企业项目请看 [https://gitee.com/enterprises](https://gitee.com/enterprises)}
+# 框架介绍
 
-#### 软件架构
-软件架构说明
+​    K-Duck是一款基于Spring MVC、Spring、Spring JdbcTemplate为底层技术的开发框架，在此框架上你可以快速的构建出自己想要的功能模块。与以往的框架不同的是，框架将数据表以对象的方式进行了封装，自身完全接管了数据访问层的逻辑，开发者无需编写DAO层的逻辑代码，并要求以SQL装配的形式构造SQL查询语句，降低SQL拼写的能力要求，减少由于SQL拼写导致的问题。在业务层也提供了一套较为灵活的默认Service实现，尽可能的避免开发者编写重复的逻辑代码，并将具体的业务对象进行了更高一层的抽象，形成统一、扩展能力良好的业务对象供所有业务场景使用。由于进行了抽象设计，为一些切面性的管理、控制的需求场景提供了可行性。
 
+# 框架底层技术
 
-#### 安装教程
+1.  JDK 8
 
-1.  xxxx
-2.  xxxx
-3.  xxxx
+2.  Spring-Boot 2.1.5
 
-#### 使用说明
+# 框架组件
 
-1.  xxxx
-2.  xxxx
-3.  xxxx
+框架目前由以下几模块组成
 
-#### 参与贡献
+-   **core模块：**核心模块，包含了框架使用的核心逻辑，会强制绑定数据源，因此需要在application.yml中配置数据源信息。
 
-1.  Fork 本仓库
-2.  新建 Feat_xxx 分支
-3.  提交代码
-4.  新建 Pull Request
+-   **security模块：**安全模块，一般对于单体应用需要安全控制时需要进行依赖，负责系统的认证、授权。
 
+# 功能架构
 
-#### 码云特技
-
-1.  使用 Readme\_XXX.md 来支持不同的语言，例如 Readme\_en.md, Readme\_zh.md
-2.  码云官方博客 [blog.gitee.com](https://blog.gitee.com)
-3.  你可以 [https://gitee.com/explore](https://gitee.com/explore) 这个地址来了解码云上的优秀开源项目
-4.  [GVP](https://gitee.com/gvp) 全称是码云最有价值开源项目，是码云综合评定出的优秀开源项目
-5.  码云官方提供的使用手册 [https://gitee.com/help](https://gitee.com/help)
-6.  码云封面人物是一档用来展示码云会员风采的栏目 [https://gitee.com/gitee-stars/](https://gitee.com/gitee-stars/)
+    框架虽然在开发时也是传统的分层结构，即用户接口层，业务逻辑层和数据访问层，但框架将一些常见、重复的逻辑进行了封装，开发者只需要关注具体的业务逻辑代码的编写。
+    
