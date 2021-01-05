@@ -1,4 +1,4 @@
-# kduck-core
+# K-Duck
 
 # 框架介绍
 
