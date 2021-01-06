@@ -14,9 +14,9 @@
 
 框架目前由以下几模块组成
 
--   **core模块：**核心模块，包含了框架使用的核心逻辑，会强制绑定数据源，因此需要在application.yml中配置数据源信息。
+-   **core模块：** 核心模块，包含了框架使用的核心逻辑，会强制绑定数据源，因此需要在application.yml中配置数据源信息。
 
--   **security模块：**安全模块，一般对于单体应用需要安全控制时需要进行依赖，负责系统的认证、授权。
+-   **security模块：** 安全模块，一般对于单体应用需要安全控制时需要进行依赖，负责系统的认证、授权。
 
 # 功能架构
 
@@ -84,7 +84,7 @@ url: jdbc:mysql://127.0.0.1:3306/kduck_demo? useSSL=false&nullCatalogMeansCurren
 
 然后我们启动程序，运行Application，看到如下界面表示启动成功：
 
-（图）
+![输入图片说明](https://images.gitee.com/uploads/images/2021/0106/214758_3441f283_403814.png "启动成功.png")
 
 由于当前数据库中没有任何数据表，因此启动信息中没有任何数据表扫描的信息输出。
 
@@ -92,7 +92,7 @@ url: jdbc:mysql://127.0.0.1:3306/kduck_demo? useSSL=false&nullCatalogMeansCurren
 
 接下来会以一个示例来演示如何使用框架来开发。假设需要开发一个班级学员的模块，模块含有班级和学员两张表，数据表设计如下：
 
-（图）
+![输入图片说明](https://images.gitee.com/uploads/images/2021/0106/214833_356c4698_403814.png "演示ER.png")
 
 按照下面的步骤创建模块：
 1.	创建为该模块创建一个包，例如：cn.kduck.demo
@@ -100,15 +100,18 @@ url: jdbc:mysql://127.0.0.1:3306/kduck_demo? useSSL=false&nullCatalogMeansCurren
 3.	在该包下创建query包及一个查询器类：DemoQuery
 创建后如图：
 
-（图）
+![输入图片说明](https://images.gitee.com/uploads/images/2021/0106/214850_c50ab2cb_403814.png "演示代码结构.png")
 
+先为查询器对象编写查询逻辑（查询器主要负责拼装查询语句），DemoQuery实现cn.kduck.core.dao.query.QueryCreator接口，并实现接口方法，代码如下：
+
+![输入图片说明](https://images.gitee.com/uploads/images/2021/0106/215104_763540d7_403814.png "屏幕截图.png")
 - queryCode：返回查询器的编码，要求全局唯一，用于获取该查询器时，作为标识使用。此方法可以不实现，框架会以当前类名为编码，因此需要注意重名情况。
 - createQuery：构造一个QuerySupport对象返回，该对象可以得到真正执行用的Query。一般使用SelectBuilder来构造，后面的章节会对SelectBuilder的使用进行详细说明。示例代码中的含义是要进行CLASS_INFO的实体进行查询，并且支持按照className（班级名称）进行模糊查询。
 - 最后需要声明为一个Spring的Bean。在类头打上注解：@Component
 
 然后开始编写DemoController代码，使用框架自带的默认业务逻辑对象DefaultService，直接使用最终代码类似：
 
-（图）
+![输入图片说明](https://images.gitee.com/uploads/images/2021/0106/215231_8d99e342_403814.png "最终代码.png")
 
 > 重要说明：此处仅为示例，实际开发中不建议直接在Controller中使用DefaultService类，强烈推荐通过创建一个业务Service接口及对应实现类的方式，实现类继承DefaultService类的方式使用。
 
@@ -120,7 +123,7 @@ url: jdbc:mysql://127.0.0.1:3306/kduck_demo? useSSL=false&nullCatalogMeansCurren
 
 如果在添加班级的同时也保存学员，这个时候需要扩展单独的Service接口进行实现了，在demo包下创建service子包及DemoService接口及相关的实现类，并创建一个addClassAndStudents(ValueMap classInfo, List<ValueMap> studentList)方法，编写实现类代码如图：
 
-（图）
+![输入图片说明](https://images.gitee.com/uploads/images/2021/0106/215306_434646c6_403814.png "实现类代码.png")
 
 - 接口实现类需要继承DefaultService类，这样才能使用封装的数据操作方法。
 - 调用add方法保存班级信息，并返回保存后的主键。
@@ -131,7 +134,7 @@ url: jdbc:mysql://127.0.0.1:3306/kduck_demo? useSSL=false&nullCatalogMeansCurren
 
 可以看到在框架中默认都是使用ValueMap和ValueMapList对象代表统一的业务对象来贯穿所有模块，负责承载业务数据的封装。但对于业务逻辑稍微复杂的模块，会出现满处皆ValueMap的窘状，开发者无法快速识别每个ValueMap到底是哪个业务对象。为此，框架也用一种对象结构的形式支持了Bean对象的形式但也保留着ValueMap的特性。这种结构以一个示例说明，如图所示：
 
-（图）
+![输入图片说明](https://images.gitee.com/uploads/images/2021/0106/215736_238a7165_403814.png "Bean形式ValueMap.png")
 
 以这种结构兼顾着JavaBean和ValueMap的特性，在编写业务逻辑中使用这种结构对象就可以避免出现上述混乱的问题。但接下来的问题就是一般IDE无法支持这种代码结构的自动生成，手动生成这种异结构的JavaBean还是会造成一定的工作量，为此框架专门定制了一种基于Eclipse和IntelliJ IDEA编辑器的插件，可以像生成传统getter和setter方法那样，方便快速的生成此结构的代码。
 
@@ -143,6 +146,9 @@ SelectBuilder是构造查询语句的构造器对象，可以将拼装SQL的部�
 
 下面是SelectBuilder调用方法调用链图，包含了主要的SQL装配方法：
 
-（图）
+![输入图片说明](https://images.gitee.com/uploads/images/2021/0106/215809_343d78fc_403814.png "SelectBuilder结构.png")
 
-（上图已经是旧版本，待更新）
+（上图已经是旧版本，待更新。目前已支持更为丰富的函数）
+
+以下是一个SelectBuilder的基本用法：
+
