@@ -71,7 +71,7 @@ public class Application {
 ```
 spring:
   datasource:
-url: jdbc:mysql://127.0.0.1:3306/kduck_demo? useSSL=false&nullCatalogMeansCurrent=true&serverTimezone=Asia/Shanghai
+    url: jdbc:mysql://127.0.0.1:3306/kduck_demo? useSSL=false&nullCatalogMeansCurrent=true&serverTimezone=Asia/Shanghai
     driver-class-name: com.mysql.cj.jdbc.Driver
     username: liuhg
     password: gang317
@@ -152,3 +152,31 @@ SelectBuilder是构造查询语句的构造器对象，可以将拼装SQL的部�
 
 以下是一个SelectBuilder的基本用法：
 
+```java
+  //准备查询参数值Map
+  Map<String, Object> paramMap = ParamMap.create("userName", "刚").set("age","20").toMap();
+
+  //创建一个查询构造器
+  SelectBuilder sqlBuiler = new SelectBuilder(paramMap);
+
+  //绑定两表需要返回的查询字段（a别名表下的所有字段及b别名表下除userId属性对应字段外的所有字段）
+  sqlBuiler.bindFields("a",userEntityDef.getFieldList())
+           .bindFields("b", BeanDefUtils.excludeField(orgUserEntityDef.getFieldList(),"userId"));
+
+  //首先构造查询的表及关系（前一个参数为别名，第二个参数为表对应的实体对象），两表之间为INNER JOIN关系
+  //然后构造查询条件
+  sqlBuiler.from("a",userEntityDef).innerJoin("b",orgUserEntityDef)
+   .where()
+  .and("a.USER_NAME", ConditionType.BEGIN_WITH,"userName")
+  .or("a.AGE", ConditionType.IS_NOT_EMPTY);
+
+  //该查询需要以字段进行COUNT统计数量
+  sqlBuiler.bindAggregate("a.USER_NAME", AggregateType.COUNT);
+  QuerySupport querySupport = sqlBuiler.build();
+```
+最终构造出的SQL语句为：
+
+```sql
+SELECT a.USER_ID,a.USER_NAME,a.GENDER,a.BIRTHDAY,COUNT(a.AGE) AS AGE,a.ENABLE,b.ORG_USER_ID,b.ORG_ID  FROM DEMO_USER a INNER JOIN DEMO_ORG_USER b ON a.USER_ID=b.USER_ID WHERE a.USER_NAME LIKE ? OR  (a.AGE IS NOT NULL AND a.AGE !='') 
+```
+参数为："刚%"
