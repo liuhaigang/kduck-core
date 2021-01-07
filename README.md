@@ -49,7 +49,7 @@
 
 首次建站也许会花费一些时间来下载相关的依赖jar文件。
 
-然后创建代码包com.goldgov，在该包下创建一个java文件用于启动主程序，比如我们创建一个Applicaton.java文件（主类如果放在其他的包中，需要Spring扫描cn.kduck.simple包代码），为其编写启动代码如下：
+然后创建代码包com.goldgov，在该包下创建一个java文件用于启动主程序，比如我们创建一个Applicaton.java文件（主类如果放在其他的包中，需要Spring扫描cn.kduck包代码），为其编写启动代码如下：
 
 
 ```java
@@ -71,7 +71,7 @@ public class Application {
 ```
 spring:
   datasource:
-    url: jdbc:mysql://127.0.0.1:3306/kduck_demo? useSSL=false&nullCatalogMeansCurrent=true&serverTimezone=Asia/Shanghai
+    url: jdbc:mysql://127.0.0.1:3306/kduck_demo?useSSL=false&nullCatalogMeansCurrent=true&serverTimezone=Asia/Shanghai
     driver-class-name: com.mysql.cj.jdbc.Driver
     username: liuhg
     password: liuhg317
