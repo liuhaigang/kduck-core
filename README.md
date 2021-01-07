@@ -415,6 +415,16 @@ public class DemoController {
 
 这是一个标准的Controller的写法并加入了Swagger相关注解，从代码层面几乎没有什么特别的。其中@ApiJsonResponse和@ApiField注解是框架扩展的，由于JsonObject对象中仅为标准的属性结构，无法正确真实的反应返回的json数据结构，可以通过这两个注解以json结构展现在swagger界面中。
 
+随后将数据表创建好，并再次启动应用，在启动的日志输出中可以看到扫描数据表的信息：
+
+![输入图片说明](https://images.gitee.com/uploads/images/2021/0107/221720_aebad687_403814.png "日志输出.png")
+
+由于仅包含后端接口服务，没有集成页面，你可以通过swagger来测试接口（http://localhost:8080/swagger-ui.html）：
+
+![输入图片说明](https://images.gitee.com/uploads/images/2021/0107/234946_a00dbcb8_403814.png "swagger截图.png")
+
+> 一个简单的完整示例，请参考：[kduck-core示例项目](https://gitee.com/lhg317/kduck-example)。
+
 ## 关于查询构造器
 
 SelectBuilder是构造查询语句的构造器对象，可以将拼装SQL的部分封装到构造器中进行，可以支撑统一对SQL拼装逻辑的优化。SelectBuilder经常被用在QueryCreator接口实现中，该接口方法参数中提供了实体仓库对象，便于获取实体定义对象，因为构造器要求构造时提供要查询表对应的实体对象，然后调用where()开始条件的拼写，最后调用build()方法返回QuerySupport对象。
@@ -456,16 +466,5 @@ SELECT a.USER_ID,a.USER_NAME,a.GENDER,a.BIRTHDAY,COUNT(a.AGE) AS AGE,a.ENABLE,b.
 ```
 参数为："刚%"
 
-随后你可以将数据表创建好，并启动应用，在启动的日志输出中可以看到扫描数据表的信息：
 
-![输入图片说明](https://images.gitee.com/uploads/images/2021/0107/221720_aebad687_403814.png "日志输出.png")
-
-
-
-由于仅包含后端接口服务，你可以通过swagger来测试接口（http://localhost:8080/swagger-ui.html）：
-
-![输入图片说明](https://images.gitee.com/uploads/images/2021/0107/221934_98c534fe_403814.png "swagger截图.png")
-
-一个简单的完整示例，请参考：[kduck-core示例项目](https://gitee.com/lhg317/kduck-example)。
-
-我们会陆续完善该项目，有任何关于K-Duck框架问题可邮件至：lhg_0317@163.com
+ **我们会陆续完善该项目，有任何关于K-Duck框架问题可邮件至：lhg_0317@163.com** 
