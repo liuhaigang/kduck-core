@@ -74,7 +74,7 @@ spring:
     url: jdbc:mysql://127.0.0.1:3306/kduck_demo? useSSL=false&nullCatalogMeansCurrent=true&serverTimezone=Asia/Shanghai
     driver-class-name: com.mysql.cj.jdbc.Driver
     username: liuhg
-    password: gang317
+    password: liuhg317
 ```
 当然你也可以禁用启动时扫描数据表的功能，但在此时我们先进行启动扫描为例接下来的步骤。
 
@@ -86,7 +86,7 @@ spring:
 
 ![输入图片说明](https://images.gitee.com/uploads/images/2021/0106/214758_3441f283_403814.png "启动成功.png")
 
-由于当前数据库中没有任何数据表，因此启动信息中没有任何数据表扫描的信息输出。
+由于当前数据库中没有任何数据表，因此启动信息中没有任何数据表扫描的信息输出。下面的章节我们基于这个空项目创建一个演示用的模块。
 
 ## 模块开发
 
@@ -95,52 +95,327 @@ spring:
 ![输入图片说明](https://images.gitee.com/uploads/images/2021/0106/214833_356c4698_403814.png "演示ER.png")
 
 按照下面的步骤创建模块：
-1.	创建为该模块创建一个包，例如：cn.kduck.example
-2.	在该包下创建web包及一个控制器类：DemoController
-3.	在该包下创建query包及一个查询器类：DemoQuery
-创建后如图：
+1. 创建为该模块创建一个包，例如：cn.kduck.example
+2. 在包下创建service包，创建班级实体ClassInfo和学生实体StudentInfo对象
+3. 创建业务接口及对应的实现类，在service包中创建一个DemoService接口，并再创建一个service.impl包，在其下创建一个DemoService接口的实现类DemoServiceImpl。
+4. 在该包下创建query包及一个查询器类：DemoQuery，主要用于构造数据查询对象。
+5. 在该包下创建web包及一个控制器类：DemoController
+创建后的代码结构如图：
 
 ![输入图片说明](https://images.gitee.com/uploads/images/2021/0106/214850_c50ab2cb_403814.png "演示代码结构.png")
 
-先为查询器对象编写查询逻辑（查询器主要负责拼装查询语句），DemoQuery实现cn.kduck.core.dao.query.QueryCreator接口，并实现接口方法，代码如下：
+然后我们依次完善每个类的代码逻辑，首先我们完善两个实体的属性，框架为了扩展性，在设计初期使用的是Map对象（框架中为ValueMap对象）代替了传统Bean对象，
+负责承载业务数据的封装。但对于业务逻辑稍微复杂的模块，会出现满处皆ValueMap的窘状，开发者无法快速识别每个ValueMap到底是哪个业务对象。
+为此，框架也用一种对象结构的形式支持了Bean对象的形式但也保留着ValueMap的特性。所以我们的班级和学生实体看起来像是这样的结构：
 
-![输入图片说明](https://images.gitee.com/uploads/images/2021/0106/215104_763540d7_403814.png "屏幕截图.png")
-- queryCode：返回查询器的编码，要求全局唯一，用于获取该查询器时，作为标识使用。此方法可以不实现，框架会以当前类名为编码，因此需要注意重名情况。
-- createQuery：构造一个QuerySupport对象返回，该对象可以得到真正执行用的Query。一般使用SelectBuilder来构造，后面的章节会对SelectBuilder的使用进行详细说明。示例代码中的含义是要进行CLASS_INFO的实体进行查询，并且支持按照className（班级名称）进行模糊查询。
-- 最后需要声明为一个Spring的Bean。在类头打上注解：@Component
+ClassInfo:
+```java
+public class ClassInfo extends ValueMap {
 
-然后开始编写DemoController代码，使用框架自带的默认业务逻辑对象DefaultService，直接使用最终代码类似：
+    /**班级ID*/
+    public static final String CLASS_ID = "classId";
+    /**班级名称*/
+    public static final String CLASS_NAME = "className";
+    /**班号*/
+    public static final String CLASS_NO = "classNo";
 
-![输入图片说明](https://images.gitee.com/uploads/images/2021/0106/215231_8d99e342_403814.png "最终代码.png")
+    public ClassInfo() {}
 
-> 重要说明：此处仅为示例，实际开发中不建议直接在Controller中使用DefaultService类，强烈推荐通过创建一个业务Service接口及对应实现类的方式，实现类继承DefaultService类的方式使用。
+    public ClassInfo(Map<String, Object> map) {
+        super(map);
+    }
 
-这是一个标准的Controller的写法（未加入Swagger相关注解），从代码层面几乎没有什么特别的，对于添加修改的传入参数和返回对象都是ValueMap或ValueMapList对象，同时只是这里使用的是默认的DefaultService，我们并未定义一个单独的业务接口，DefaultService的大部分接口都是需要传入实体定义对象的编码（默认是表名全大写），这个编码用于定位唯一的实体定义对象，这样框架才知道具体操作的数据表，这个编码在开发时推荐定义到一个单独的常量类中进行统一管理。
+    public void setClassId(Long classId) {
+        super.setValue(CLASS_ID, classId);
+    }
 
-这段示例代码中，可以看到在条件查询时，我们是先构造了一个查询条件的Map来保存查询条件值，ParamMap是一个便于构造参数Map的工具类，然后调用DefaultService.getQuery方法通过编码值得到我们上面创建的DemoQuery对象，同时将查询参数Map传递进getQuery方法便于条件的拼装。之后调用list方法进行条件查询返回查询结果，page对象是分页对象，只包含分页信息，不包含结果集，用于进行分页处理，list方法执行后，会对page中的页码相关属性进行更新，最后构造一个JsonPageObject将分页及查询结果返回。
+    public Long getClassId() {
+        return super.getValueAsLong(CLASS_ID);
+    }
 
-然后我们按照同样的步骤再创建班级学员（STUDENT_INFO）的代码，这里不再赘述。
+    public void setClassName(String className) {
+        super.setValue(CLASS_NAME, className);
+    }
 
-如果在添加班级的同时也保存学员，这个时候需要扩展单独的Service接口进行实现了，在demo包下创建service子包及DemoService接口及相关的实现类，并创建一个addClassAndStudents(ValueMap classInfo, List<ValueMap> studentList)方法，编写实现类代码如图：
+    public String getClassName() {
+        return super.getValueAsString(CLASS_NAME);
+    }
 
-![输入图片说明](https://images.gitee.com/uploads/images/2021/0106/215306_434646c6_403814.png "实现类代码.png")
+    public void setClassNo(String classNo) {
+        super.setValue(CLASS_NO, classNo);
+    }
 
-- 接口实现类需要继承DefaultService类，这样才能使用封装的数据操作方法。
-- 调用add方法保存班级信息，并返回保存后的主键。
-- 调用batchAdd方法将学员信息批量保存，此处每个学员信息里需要设置班级的Id与新建立的班级进行关联，batchAdd的最后一个参数用于此种情况，会为List中的每个Map对象设置额外的扩展属性，具体使用方法请参考相关API文档。
-- 最后不要忘记标记@Transactional事务注解，因为这个方法进行了多次写操作，要保持操作的原子性。
+    public String getClassNo() {
+        return super.getValueAsString(CLASS_NO);
+    }
+}
+```
 
-## 使用Bean对象
+StudentInfo:
+```java
+public class StudentInfo extends ValueMap {
 
-可以看到在框架中默认都是使用ValueMap和ValueMapList对象代表统一的业务对象来贯穿所有模块，负责承载业务数据的封装。但对于业务逻辑稍微复杂的模块，会出现满处皆ValueMap的窘状，开发者无法快速识别每个ValueMap到底是哪个业务对象。为此，框架也用一种对象结构的形式支持了Bean对象的形式但也保留着ValueMap的特性。这种结构以一个示例说明，如图所示：
+    /**学生ID*/
+    public static final String STUDENT_ID = "studentId";
+    /**班级ID*/
+    public static final String CLASS_ID = "classId";
+    /**学生姓名*/
+    public static final String NAME = "name";
+    /**学生性别*/
+    public static final String GENDER = "gender";
+    /**学号*/
+    public static final String STUDENT_NO = "studentNo";
 
-![输入图片说明](https://images.gitee.com/uploads/images/2021/0106/215736_238a7165_403814.png "Bean形式ValueMap.png")
+    public StudentInfo() {}
+
+    public StudentInfo(Map<String, Object> map) {
+        super(map);
+    }
+
+    public void setStudentId(long studentId) {
+        super.setValue(STUDENT_ID, studentId);
+    }
+
+    public Long getStudentId() {
+        return super.getValueAsLong(STUDENT_ID);
+    }
+
+    public void setClassId(Long classId) {
+        super.setValue(CLASS_ID, classId);
+    }
+
+    public long getClassId() {
+        return super.getValueAsLong(CLASS_ID);
+    }
+
+    public void setName(String name) {
+        super.setValue(NAME, name);
+    }
+
+    public String getName() {
+        return super.getValueAsString(NAME);
+    }
+
+    public void setGender(Integer gender) {
+        super.setValue(GENDER, gender);
+    }
+
+    public Integer getGender() {
+        return super.getValueAsInteger(GENDER);
+    }
+
+    public void setStudentNo(Integer studentNo) {
+        super.setValue(STUDENT_NO, studentNo);
+    }
+
+    public Integer getStudentNo() {
+        return super.getValueAsInteger(STUDENT_NO);
+    }
+}
+```
 
 以这种结构兼顾着JavaBean和ValueMap的特性，在编写业务逻辑中使用这种结构对象就可以避免出现上述混乱的问题。但接下来的问题就是一般IDE无法支持这种代码结构的自动生成，手动生成这种异结构的JavaBean还是会造成一定的工作量，为此框架专门定制了一种基于Eclipse和IntelliJ IDEA编辑器的插件，可以像生成传统getter和setter方法那样，方便快速的生成此结构的代码。
-
 具体插件请到这里获取：https://gitee.com/platform_team/kduck-codeplugin-idea/releases
 
-## 查询构造器
+接下来我们定义业务接口及相关方法，我们仅为演示，暂时不考虑接口的合理性及严谨性，接口方法定义如下所示：
+
+```java
+public interface DemoService {
+
+    String CODE_CLASS = "CLASS_INFO"; //CLASS_INFO表的编码常量，框架默认以表名全大写为实体编码，该编码会使用在很多地方
+    String CODE_STUDENT = "STUDENT_INFO";//STUDENT_INFO表的编码常量，框架默认以表名全大写为实体编码，该编码会使用在很多地方
+
+    void addClass(ClassInfo classInfo);
+
+    void addStudent(Long classId,StudentInfo studentInfo);
+
+    void updateStudent(StudentInfo studentInfo);
+
+    void deleteStudent(String[] studentId);
+
+    StudentInfo getStudent(String studentId);
+
+    List<StudentInfo> listStudent(String studentName, Page page);
+}
+```
+
+这个接口没有什么不同，其中包含了与业务相关的两个表的编码常量，这个编码会被多处使用，因此我们习惯在业务接口中定义常量的方式使用，注意这两个常量的值虽然看上去和表名一致，但本质上是框架默认使用表名作为了编码值，编码值可以通过框架提供的扩展方式调整生成策略，编码值需全局唯一。
+
+然后创建查询器对象编写查询逻辑，查询器主要负责拼装比较复杂的查询语句，DemoQuery实现cn.kduck.core.dao.query.QueryCreator接口，并实现接口方法，代码如下：
+
+```java
+@Component
+public class DemoQuery implements QueryCreator {
+
+    @Override
+    public QuerySupport createQuery(Map<String, Object> paramMap, BeanDefDepository depository) {
+        BeanEntityDef classEntityDef = depository.getEntityDef(CODE_CLASS);//获取班级表的对象的实体表示对象，CODE_CLASS为接口中定义的实体编码
+        BeanEntityDef studentEntityDef = depository.getEntityDef(CODE_STUDENT);//获取学生表的对象的实体表示对象，CODE_STUDENT为接口中定义的实体编码
+
+        SelectBuilder selectBuilder = new SelectBuilder(paramMap);
+        selectBuilder.bindFields("c", BeanDefUtils.includeField(classEntityDef.getFieldList(), "className"));
+        selectBuilder.bindFields("s", studentEntityDef.getFieldList());
+
+        selectBuilder.from("s", studentEntityDef).innerJoin("c", classEntityDef)
+                .where()
+                .and("s.NAME", ConditionType.CONTAINS,"studentName");//设置一个按照学生姓名模糊匹配的查询条件，其中"studentName"为与方法参数paramMap中的key对应，如果paramMap中没有key为"studentName"的元素，则不拼写该条件。
+        return selectBuilder.build();
+    }
+}
+```
+
+- createQuery：构造一个QuerySupport对象返回，该对象可以得到真正执行用的Query。一般使用SelectBuilder来构造，后面的章节会对SelectBuilder的使用进行详细说明。示例代码中的含义是要进行CLASS_INFO的实体进行查询，并且支持按照className（班级名称）进行模糊查询。
+- 最后需要声明为一个Spring的Bean。在类头标注注解：@Component
+
+> 框架之所以将查询对象单独提取出来，是因此类查询逻辑是有一定复用价值，将其独立出来可以在多处需要的地方使用。
+
+然后编写接口的实现类：
+
+```java
+@Service
+public class DemoServiceImpl extends DefaultService implements DemoService {
+
+    @Override
+    public void addClass(ClassInfo classInfo) {
+        super.add(CODE_CLASS,classInfo);
+    }
+
+    @Override
+    public void addStudent(Long classId, StudentInfo studentInfo) {
+        Assert.notNull(classId,"班级ID不能为null");
+
+        studentInfo.setClassId(classId);
+        super.add(CODE_STUDENT,studentInfo);
+    }
+
+    @Override
+    public void updateStudent(StudentInfo studentInfo) {
+        super.update(CODE_STUDENT,studentInfo);
+    }
+
+    @Override
+    public void deleteStudent(String[] studentId) {
+        super.delete(CODE_STUDENT,studentId);
+    }
+
+    @Override
+    public StudentInfo getStudent(String studentId) {
+        return super.getForBean(CODE_STUDENT,studentId,StudentInfo::new);
+    }
+
+    @Override
+    public List<StudentInfo> listStudent(String studentName, Page page) {
+        Map<String, Object> paramMap = ParamMap.create("studentName", studentName).toMap();
+        QuerySupport query = super.getQuery(DemoQuery.class, paramMap);
+        return super.listForBean(query,page,StudentInfo::new);
+    }
+}
+```
+这里和我们平常编写的Service实现类有些不同，首先就是继承了DefaultService类，该类提供类对Dao操作的封装，涵盖类大多数常用的数据访问操作方法。因此我们可以看到在进行增删改查操作时，我们并不需要太多的代码逻辑以及特定Dao的注入实现。
+在接口实现中，所有的数据操作均使用DefaultService中提供的方法，在接口中定义的编码值几乎在所有方法中均需要被使用，用来表示预操作的数据表对象。
+对于查询方法，由于使用了Bean形式的ValueMap对象，因此可以通过xxxForBean方法来对结果集进行转换，关于其他接口及使用方法，您可以参看DefaultService中其他方法的接口说明。
+
+最后编写DemoController代码，在Controller中注入DemoService接口，直接使用最终代码类似：
+
+```java
+@RestController
+@RequestMapping("/example")
+@Api(tags="示例模块")
+public class DemoController {
+
+    private DemoService demoService;
+
+    @Autowired
+    public DemoController(DemoService demoService){
+        this.demoService = demoService;
+    }
+
+    @PostMapping("/class/add")
+    @ApiOperation("添加班级")
+    @ApiParamRequest({
+            @ApiField(name="className",value="班级名称"),
+            @ApiField(name="classNo",value="班号")
+    })
+    public JsonObject addClass(ClassInfo classInfo) {
+        demoService.addClass(classInfo);
+        return JsonObject.SUCCESS;
+    }
+
+    @PostMapping("/student/add")
+    @ApiOperation("添加学生信息")
+    @ApiParamRequest({
+            @ApiField(name="classId",value="班级ID"),
+            @ApiField(name="name",value="学生姓名"),
+            @ApiField(name="gender",value="学生性别（1男，2女）",allowableValues = "1,2"),
+            @ApiField(name="studentNo",value="学号")
+
+    })
+    public JsonObject addStudent(Long classId,StudentInfo studentInfo) {
+        demoService.addStudent(classId,studentInfo);
+        return JsonObject.SUCCESS;
+    }
+
+    @PutMapping("/student/update")
+    @ApiOperation("更新学生信息")
+    @ApiParamRequest({
+            @ApiField(name="studentId",value="学生ID"),
+            @ApiField(name="name",value="学生姓名"),
+            @ApiField(name="gender",value="学生性别（1男，2女）",allowableValues = "1,2"),
+            @ApiField(name="studentNo",value="学号")
+
+    })
+    public JsonObject updateStudent(StudentInfo studentInfo) {
+        demoService.updateStudent(studentInfo);
+        return JsonObject.SUCCESS;
+    }
+
+    @PutMapping("/student/delete")
+    @ApiOperation("删除学生信息")
+    @ApiParamRequest({
+            @ApiField(name="ids",value="学生ID",allowMultiple = true)
+    })
+    public JsonObject deleteStudent(@RequestParam("ids") String[] ids) {
+        demoService.deleteStudent(ids);
+        return JsonObject.SUCCESS;
+    }
+
+    @PutMapping("/student/get")
+    @ApiOperation("查看学生信息")
+    @ApiParamRequest({
+            @ApiField(name="studentId",value="学生ID")
+    })
+    @ApiJsonResponse({
+            @ApiField(name="studentId",value="学生ID"),
+            @ApiField(name="name",value="学生姓名"),
+            @ApiField(name="gender",value="学生性别（1男，2女）",allowableValues = "1,2"),
+            @ApiField(name="studentNo",value="学号")
+    })
+    public JsonObject getStudent(@RequestParam("studentId") String studentId) {
+        StudentInfo student = demoService.getStudent(studentId);
+        return new JsonObject(student);
+    }
+
+    @PutMapping("/student/list")
+    @ApiOperation("分页查询学生信息")
+    @ApiParamRequest({
+            @ApiField(name="studentName",value="学生姓名")
+    })
+    @ApiJsonResponse(isArray = true,value={
+            @ApiField(name="studentId",value="学生ID"),
+            @ApiField(name="name",value="学生姓名"),
+            @ApiField(name="gender",value="学生性别（1男，2女）",allowableValues = "1,2"),
+            @ApiField(name="studentNo",value="学号")
+    })
+    public JsonObject listStudent(String studentName, @ApiIgnore Page page) {
+        List<StudentInfo> studentInfos = demoService.listStudent(studentName, page);
+        return new JsonPageObject(page,studentInfos);
+    }
+}
+```
+
+这是一个标准的Controller的写法并加入了Swagger相关注解，从代码层面几乎没有什么特别的。其中@ApiJsonResponse和@ApiField注解是框架扩展的，由于JsonObject对象中仅为标准的属性结构，无法正确真实的反应返回的json数据结构，可以通过这两个注解以json结构展现在swagger界面中。
+
+## 关于查询构造器
 
 SelectBuilder是构造查询语句的构造器对象，可以将拼装SQL的部分封装到构造器中进行，可以支撑统一对SQL拼装逻辑的优化。SelectBuilder经常被用在QueryCreator接口实现中，该接口方法参数中提供了实体仓库对象，便于获取实体定义对象，因为构造器要求构造时提供要查询表对应的实体对象，然后调用where()开始条件的拼写，最后调用build()方法返回QuerySupport对象。
 
