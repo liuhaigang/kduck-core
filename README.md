@@ -102,7 +102,7 @@ spring:
 5. 在该包下创建web包及一个控制器类：DemoController
 创建后的代码结构如图：
 
-![输入图片说明](https://images.gitee.com/uploads/images/2021/0106/214850_c50ab2cb_403814.png "演示代码结构.png")
+![输入图片说明](https://images.gitee.com/uploads/images/2021/0107/232910_44cc8449_403814.png "演示代码结构.png")
 
 然后我们依次完善每个类的代码逻辑，首先我们完善两个实体的属性，框架为了扩展性，在设计初期使用的是Map对象（框架中为ValueMap对象）代替了传统Bean对象，
 负责承载业务数据的封装。但对于业务逻辑稍微复杂的模块，会出现满处皆ValueMap的窘状，开发者无法快速识别每个ValueMap到底是哪个业务对象。
