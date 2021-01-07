@@ -8,7 +8,7 @@
 
 1.  JDK 8
 
-2.  Spring-Boot 2.1.5
+2.  Spring-Boot 2.4.0
 
 # 框架组件
 
@@ -20,7 +20,7 @@
 
 # 功能架构
 
-    框架虽然在开发时也是传统的分层结构，即用户接口层，业务逻辑层和数据访问层，但框架将一些常见、重复的逻辑进行了封装，开发者只需要关注具体的业务逻辑代码的编写。
+框架虽然在开发时也是传统的分层结构，即用户接口层，业务逻辑层和数据访问层，但框架将一些常见、重复的逻辑进行了封装，开发者只需要关注具体的业务逻辑代码的编写。
 
 ![输入图片说明](https://images.gitee.com/uploads/images/2021/0106/000120_90c0a16e_403814.png "功能架构.png")
     
@@ -95,7 +95,7 @@ spring:
 ![输入图片说明](https://images.gitee.com/uploads/images/2021/0106/214833_356c4698_403814.png "演示ER.png")
 
 按照下面的步骤创建模块：
-1.	创建为该模块创建一个包，例如：cn.kduck.demo
+1.	创建为该模块创建一个包，例如：cn.kduck.example
 2.	在该包下创建web包及一个控制器类：DemoController
 3.	在该包下创建query包及一个查询器类：DemoQuery
 创建后如图：
@@ -180,6 +180,14 @@ SelectBuilder是构造查询语句的构造器对象，可以将拼装SQL的部�
 SELECT a.USER_ID,a.USER_NAME,a.GENDER,a.BIRTHDAY,COUNT(a.AGE) AS AGE,a.ENABLE,b.ORG_USER_ID,b.ORG_ID  FROM DEMO_USER a INNER JOIN DEMO_ORG_USER b ON a.USER_ID=b.USER_ID WHERE a.USER_NAME LIKE ? OR  (a.AGE IS NOT NULL AND a.AGE !='') 
 ```
 参数为："刚%"
+
+随后你可以将数据表创建好，并启动应用，在启动的日志输出中可以看到扫描数据表的信息：
+
+（图）
+
+由于仅包含后端接口服务，你可以通过swagger来测试接口：
+
+
 
 一个简单的完整示例，请参考：[kduck-core示例项目](https://gitee.com/lhg317/kduck-example)。
 
