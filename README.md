@@ -180,3 +180,7 @@ SelectBuilder是构造查询语句的构造器对象，可以将拼装SQL的部�
 SELECT a.USER_ID,a.USER_NAME,a.GENDER,a.BIRTHDAY,COUNT(a.AGE) AS AGE,a.ENABLE,b.ORG_USER_ID,b.ORG_ID  FROM DEMO_USER a INNER JOIN DEMO_ORG_USER b ON a.USER_ID=b.USER_ID WHERE a.USER_NAME LIKE ? OR  (a.AGE IS NOT NULL AND a.AGE !='') 
 ```
 参数为："刚%"
+
+一个简单的完整示例，请参考：[kduck-core示例项目](https://gitee.com/lhg317/kduck-example)。
+
+我们会陆续完善该项目，有任何关于K-Duck框架问题可邮件至：lhg_0317@163.com
