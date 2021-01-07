@@ -183,11 +183,13 @@ SELECT a.USER_ID,a.USER_NAME,a.GENDER,a.BIRTHDAY,COUNT(a.AGE) AS AGE,a.ENABLE,b.
 
 随后你可以将数据表创建好，并启动应用，在启动的日志输出中可以看到扫描数据表的信息：
 
-（图）
-
-由于仅包含后端接口服务，你可以通过swagger来测试接口：
+![输入图片说明](https://images.gitee.com/uploads/images/2021/0107/221720_aebad687_403814.png "日志输出.png")
 
 
+
+由于仅包含后端接口服务，你可以通过swagger来测试接口（http://localhost:8080/swagger-ui.html）：
+
+![输入图片说明](https://images.gitee.com/uploads/images/2021/0107/221934_98c534fe_403814.png "swagger截图.png")
 
 一个简单的完整示例，请参考：[kduck-core示例项目](https://gitee.com/lhg317/kduck-example)。
 
