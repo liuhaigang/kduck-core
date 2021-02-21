@@ -138,6 +138,9 @@ public final class StringUtils {
 	}
 
 	public static boolean contain(String[] array,String str){
+		if(array == null){
+			return false;
+		}
 		for (int i = 0; i < array.length; i++) {
 			if(array[i].equals(str)){
 				return true;
