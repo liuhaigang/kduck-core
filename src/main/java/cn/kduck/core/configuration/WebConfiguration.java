@@ -29,6 +29,8 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.format.FormatterRegistry;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
@@ -59,6 +61,7 @@ import java.util.List;
 //@EnableSwagger2
 @EnableSwagger2WebMvc
 @EnableCaching
+@Order(Ordered.HIGHEST_PRECEDENCE)
 //@EnableWebMvc //不要启用，否则WebMvcConfigurer的接口类不会生效
 public class WebConfiguration implements WebMvcConfigurer, ApplicationContextAware {
 
@@ -105,7 +108,7 @@ public class WebConfiguration implements WebMvcConfigurer, ApplicationContextAwa
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(new DataSourceSwitchInterceptor());
-        registry.addInterceptor(new OperateIdentificationInterceptor());
+        registry.addInterceptor(new OperateIdentificationInterceptor(50));
         registry.addInterceptor(new ValidationInterceptor(applicationContext));
         if(operateInfoHandler != null){
             registry.addInterceptor(new OperateInterceptor(operateInfoHandler));
