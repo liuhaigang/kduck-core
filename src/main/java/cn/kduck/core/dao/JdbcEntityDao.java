@@ -365,17 +365,12 @@ public class JdbcEntityDao {
     //FIXME 根据数据源对象实例缓存映射数据方言对象
     private String processPage(String sql,int firstIndex, int maxRow) {
         DatabaseDialect currentDbDialect = null;
-        String dbName = null;
-        try (Connection connection = jdbcTemplate.getDataSource().getConnection()){
-            dbName = connection.getMetaData().getDatabaseProductName();
-            for (DatabaseDialect databaseDialect : databaseDialectList) {
-                if(databaseDialect.productName().equalsIgnoreCase(dbName)){
-                    currentDbDialect = databaseDialect;
-                    break;
-                }
+        String dbName = getDatabaseName();
+        for (DatabaseDialect databaseDialect : databaseDialectList) {
+            if(databaseDialect.productName().equalsIgnoreCase(dbName)){
+                currentDbDialect = databaseDialect;
+                break;
             }
-        } catch (SQLException e) {
-            throw new RuntimeException("获取用户类型错误："+ dbName,e);
         }
 
         if(currentDbDialect == null){
@@ -383,6 +378,19 @@ public class JdbcEntityDao {
         }
         sql = currentDbDialect.pagingSql(sql,firstIndex,maxRow);
         return sql;
+    }
+
+    protected String getDatabaseName(){
+        String dbName = null;
+        try (Connection connection = jdbcTemplate.getDataSource().getConnection()){
+            dbName = connection.getMetaData().getDatabaseProductName();
+        } catch (SQLException e) {
+            throw new RuntimeException("获取数据库类型错误："+ dbName,e);
+        }
+        if(dbName == null){
+            dbName = "unknow";
+        }
+        return dbName;
     }
 
     /**
