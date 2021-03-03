@@ -22,12 +22,17 @@ import java.util.UUID;
 public class OperateIdentificationInterceptor implements HandlerInterceptor {
 
     private static ThreadLocal<OperateIdentification> optObject = new ThreadLocal<>();
+    private final int max;
 //    private static ThreadLocal<StopWatch> stopWatchThreadLocal = new ThreadLocal<>();
+
+    public OperateIdentificationInterceptor(int max){
+        this.max = max;
+    }
 
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler)
             throws Exception {
         String oid = UUID.randomUUID().toString().replaceAll("-", "");
-        optObject.set(new OperateIdentification(oid));
+        optObject.set(new OperateIdentification(oid, max));
 //        stopWatchThreadLocal.set(new StopWatch());
         return true;
     }
@@ -43,15 +48,23 @@ public class OperateIdentificationInterceptor implements HandlerInterceptor {
     }
 
     public static class OperateIdentification {
+
+        private final Log logger = LogFactory.getLog(getClass());
+
         private final String uniqueId;
+        private final int max;
         private final List<OperateObject> operateObjectList = new ArrayList<>();
 
-        public OperateIdentification(String uniqueId){
+        public OperateIdentification(String uniqueId,int max){
             this.uniqueId = uniqueId;
+            this.max = max;
         }
 
         public void addOperateObject(OperateObject operateObject){
-
+            if(operateObjectList.size() >= max){
+                logger.warn("不缓存当前操作对象，以到达限制数量：" + max);
+                return;
+            }
 //            cleanOperateObject(operateObject);
             operateObjectList.add(operateObject);
         }

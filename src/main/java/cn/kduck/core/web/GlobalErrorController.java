@@ -4,6 +4,7 @@ import cn.kduck.core.web.json.JsonObject;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.web.servlet.error.AbstractErrorController;
 import org.springframework.boot.autoconfigure.web.servlet.error.ErrorViewResolver;
+import org.springframework.boot.web.error.ErrorAttributeOptions;
 import org.springframework.boot.web.servlet.error.ErrorAttributes;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -22,6 +23,9 @@ import java.util.Map;
 @Controller
 @RequestMapping("${server.error.path:${error.path:/error}}")
 public class GlobalErrorController extends AbstractErrorController {
+
+	public static final String GLOBAL_ERROR_MESSAGE = "GLOBAL_ERROR_MESSAGE";
+	public static final String GLOBAL_ERROR_CODE = "GLOBAL_ERROR_CODE";
 
 	@Value("${server.error.path:${error.path:/error}}")
 	private String errorPath;
@@ -44,15 +48,24 @@ public class GlobalErrorController extends AbstractErrorController {
 	@RequestMapping
 	@ResponseBody
 	public JsonObject errorJson(HttpServletRequest request) {
-		Map<String, Object> body = getErrorAttributes(request,false);
+		Map<String, Object> body = getErrorAttributes(request, ErrorAttributeOptions.defaults());
 		HttpStatus status = getStatus(request);
 		ResponseEntity<Map<String, Object>> responseEntity = new ResponseEntity<Map<String, Object>>(body, status);
 
-		Object message = body.get("message");
+		Object message = request.getAttribute(GLOBAL_ERROR_MESSAGE);
+		if(message == null){
+			message = body.get("message");
+		}
 		if(message == null){
 			message = responseEntity.toString();
 		}
-		return new JsonObject(responseEntity.getBody(),-1,message.toString());
+
+		Integer errorCode = (Integer)request.getAttribute(GLOBAL_ERROR_CODE);
+		if(errorCode == null){
+			errorCode = -1;
+		}
+
+		return new JsonObject(responseEntity.getBody(),errorCode,message.toString());
 	}
 
 	@Override

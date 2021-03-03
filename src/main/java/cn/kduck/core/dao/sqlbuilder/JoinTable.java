@@ -157,11 +157,11 @@ public class JoinTable {
     }
 
     /**
-     * Join的规范检查，默认不允许关联超过3张表
+     * Join的规范检查，默认不允许关联超过5张表
      */
     private void checkJoin() {
-        if(joinOnList.size() >= 2){
-            throw new RuntimeException("【规范】JOIN不能超过3张表");
+        if(joinOnList.size() >= 4){
+            throw new RuntimeException("【规范】JOIN不能超过5张表");
         }
     }
 
