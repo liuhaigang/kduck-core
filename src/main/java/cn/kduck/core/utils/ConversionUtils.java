@@ -76,8 +76,10 @@ public final class ConversionUtils {
                 return parseDate(dateValue, DateFormatType.DATE_FORMAT_YMDHM);
             } else if (dateValue.matches("^\\d{4}-\\d{1,2}-\\d{1,2} {1}\\d{1,2}:\\d{1,2}:\\d{1,2}$")) {
                 return parseDate(dateValue, DateFormatType.DATE_FORMAT_YMDHMS);
-            }  else if (dateValue.matches("^[\\-|1-9]\\d*$")) {
+            } else if (dateValue.matches("^[\\-|1-9]\\d*$")) {
                 return new Date(Long.valueOf(dateValue));
+            } else if (dateValue.matches("^{1}\\d{1,2}:\\d{1,2}:\\d{1,2}$")) {
+                return parseDate(dateValue, DateFormatType.DATE_FORMAT_HMS);
             } else {
                 throw new IllegalArgumentException("没有对该日期类型格式准备适合的转换器：" + dateValue);
             }
@@ -103,6 +105,7 @@ public final class ConversionUtils {
             private Map<DateFormatType,DateFormat> dateFormatMap = new HashMap();
 
             public DateFormatContainer(){
+                dateFormatMap.put(DateFormatType.DATE_FORMAT_HMS,new SimpleDateFormat("HH:mm:ss"));
                 dateFormatMap.put(DateFormatType.DATE_FORMAT_YM,new SimpleDateFormat("yyyy-MM"));
                 dateFormatMap.put(DateFormatType.DATE_FORMAT_YMD,new SimpleDateFormat("yyyy-MM-dd"));
                 dateFormatMap.put(DateFormatType.DATE_FORMAT_YMDHM,new SimpleDateFormat("yyyy-MM-dd HH:mm"));
@@ -120,6 +123,7 @@ public final class ConversionUtils {
             DATE_FORMAT_YMD,
             DATE_FORMAT_YMDHM,
             DATE_FORMAT_YMDHMS,
+            DATE_FORMAT_HMS,
         }
     }
 
