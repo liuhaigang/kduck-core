@@ -146,7 +146,8 @@ public class CustomQueryBean implements QuerySupport, SignatureInfo {
         for (AliasField aliasField : aliasFields) {
             String selectFieldName = aliasField.getAlias() == null ? aliasField.getFieldDef().getFieldName() : aliasField.getAlias();
             if(appearedFields.contains(selectFieldName)){
-                aliasFieldList.remove(aliasField);
+                throw new RuntimeException("查询字段同名冲突：" + selectFieldName);
+//                aliasFieldList.remove(aliasField);
             } else {
                 appearedFields.add(selectFieldName);
                 fieldDefList.add(aliasField.getFieldDef());
