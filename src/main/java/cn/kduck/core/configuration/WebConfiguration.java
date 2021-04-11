@@ -59,7 +59,7 @@ import java.util.List;
  */
 @Configuration
 //@EnableSwagger2
-@EnableSwagger2WebMvc
+//@EnableSwagger2WebMvc
 @EnableCaching
 @Order(Ordered.HIGHEST_PRECEDENCE)
 //@EnableWebMvc //不要启用，否则WebMvcConfigurer的接口类不会生效
