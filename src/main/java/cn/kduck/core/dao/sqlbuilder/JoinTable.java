@@ -243,6 +243,44 @@ public class JoinTable {
             return conditionBuilder;
         }
 
+        /**
+         * 返回join的属性名，固定返回长度为2的数组
+         * @return
+         */
+        public String[] getJoinAttrName() {
+            if(onAttrName != null){
+                String[] joinSplit = onAttrName.split(":");
+                if(joinSplit.length == 1){
+                    return new String[]{onAttrName,onAttrName};
+                }
+                return joinSplit;
+            }
+            BeanEntityDef[] leftFkFieldList = leftEntityDef.getFkBeanEntityDef();
+            BeanEntityDef[] rightFkFieldList = rightEntityDef.getFkBeanEntityDef();
+
+            BeanFieldDef leftPkFieldDef = leftEntityDef.getPkFieldDef();
+            if(leftFkFieldList == null || leftFkFieldList.length == 0){
+                String attrName = leftPkFieldDef.getAttrName();
+                return new String[]{attrName,attrName};
+            }
+
+            BeanFieldDef rightPkFieldDef = rightEntityDef.getPkFieldDef();
+            if(rightFkFieldList == null || rightFkFieldList.length == 0){
+                String attrName = rightPkFieldDef.getAttrName();
+                return new String[]{attrName,attrName};
+            }
+
+            for (BeanEntityDef beanEntityDef : rightFkFieldList) {
+                if(beanEntityDef == leftEntityDef){
+                    String attrName = leftPkFieldDef.getAttrName();
+                    return new String[]{attrName,attrName};
+                }
+            }
+
+            String attrName = rightPkFieldDef.getAttrName();
+            return new String[]{attrName,attrName};
+        }
+
         public String getLeftTable() {
             SqlStringSplicer sqlplicer = new SqlStringSplicer();
             sqlplicer.appendWrapped(leftEntityDef.getTableName());

@@ -486,14 +486,48 @@ public class SelectBuilder {
         }
 
         CustomQueryBean queryBean = new CustomQueryBean(toSql(), paramMap);
+
         Iterator<String> alias = fieldMap.keySet().iterator();
         while (alias.hasNext()){
             String name = alias.next();
-            List<AliasField> aliasField = fieldMap.get(name);
-            if(aliasField != null && !aliasField.isEmpty()){
-                queryBean.bindFields(name,aliasField);
+            List<AliasField> aliasFieldList = fieldMap.get(name);
+            if(aliasFieldList != null && !aliasFieldList.isEmpty()){
+
+                //如果是join字段，排除被join的属性
+                if(joinTable != null){
+                    List<JoinOn> joinOnList = joinTable.getJoinOnList();
+                    for (JoinOn joinOn : joinOnList) {
+                        String rightAlias = joinOn.getRightAlias();
+                        String[] joinAttrName = joinOn.getJoinAttrName();
+                        //判断是否为join表的关联字段，如果是且主外键关联的属性名一致，则从查询返回字段列表中删除外键字段，避免重名冲突
+                        if(name.equals(rightAlias) && joinAttrName[0].equals(joinAttrName[1])){
+
+                            boolean leftHasField = false;
+                            List<AliasField> leftAliasFields = fieldMap.get(joinOn.getLeftAlias());
+                            if(leftAliasFields != null){
+                                for (AliasField field : leftAliasFields) {
+                                    if(field.getFieldDef().getAttrName().equals(joinAttrName[0])){
+                                        leftHasField = true;
+                                        break;
+                                    }
+                                }
+                            }
+
+                            AliasField[] rightAliasFields = aliasFieldList.toArray(new AliasField[0]);
+                            for (AliasField field : rightAliasFields) {
+                                if(leftHasField && field.getFieldDef().getAttrName().equals(joinAttrName[0])){
+                                    aliasFieldList.remove(field);
+                                }
+                            }
+                        }
+
+                    }
+                }
+
+                queryBean.bindFields(name,aliasFieldList);
             }
         }
+
 //        if(!fieldMap.isEmpty()){
 //            queryBean = new CustomQueryBean(toSql(), paramMap);
 //            Iterator<String> alias = fieldMap.keySet().iterator();
