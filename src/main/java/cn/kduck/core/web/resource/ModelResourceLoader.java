@@ -61,7 +61,9 @@ public class ModelResourceLoader implements InitializingBean, BeanFactoryAware {
         if(packagesToScan == null || packagesToScan.length == 0){
             List<String> packages = AutoConfigurationPackages.get(this.beanFactory);
             packagesToScan = packages.toArray(new String[0]);
-            logger.info("未配置资源类扫描路径（kduck.resource.basePackage），使用默认路径：" + packagesToScan);
+            if(logger.isInfoEnabled()){
+                logger.info("未配置资源类扫描路径（kduck.resource.basePackage），使用默认路径：" + Arrays.toString(packagesToScan));
+            }
         }
 
         int total = 0;
