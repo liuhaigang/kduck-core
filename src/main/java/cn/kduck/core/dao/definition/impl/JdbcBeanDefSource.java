@@ -66,18 +66,20 @@ public class JdbcBeanDefSource implements BeanDefSource {
 
         if (match(tableName,includeTables)) return true;
 
-        if(!match(tableName,excludeTables)) return true;
+        if(includeTables.length == 0 && !match(tableName,excludeTables)) return true;
         return false;
     }
 
     private boolean match(String tableName,String[] tables) {
+        tableName = tableName.toUpperCase();
         for (String tablePattern : tables) {
+            tablePattern = tablePattern.toUpperCase();
             if(tablePattern.endsWith("*")){
                 String prefix = tablePattern.substring(0, tablePattern.length() - 1);
                 if(tableName.startsWith(prefix)){
                     return true;
                 }
-            }else if(tableName.startsWith(tablePattern)){
+            }else if(tableName.equals(tablePattern)){
                 return true;
             }
         }
