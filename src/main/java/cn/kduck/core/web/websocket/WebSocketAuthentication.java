@@ -6,5 +6,5 @@ import org.springframework.messaging.MessageChannel;
 import java.security.Principal;
 
 public interface WebSocketAuthentication {
-    Principal authenticate(Message<?> message, MessageChannel channel);
+    Principal authenticate(Principal user,String sessionId,Object nativeHeaders);
 }

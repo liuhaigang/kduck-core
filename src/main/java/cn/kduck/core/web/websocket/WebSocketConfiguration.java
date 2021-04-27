@@ -18,6 +18,7 @@ import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBr
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
 
+import java.security.Principal;
 import java.util.List;
 import java.util.Map;
 
@@ -28,6 +29,12 @@ public class WebSocketConfiguration implements WebSocketMessageBrokerConfigurer 
 
     @Autowired(required = false)
     private WebSocketAuthentication webSocketAuthentication;
+
+    @Autowired(required = false)
+    private ConnectEventHandler connectEventHandler;
+
+    @Autowired(required = false)
+    private DisconnectEventHandler disconnectEventHandler;
 
     @Override
     public void configureMessageBroker(MessageBrokerRegistry config) {
@@ -42,36 +49,35 @@ public class WebSocketConfiguration implements WebSocketMessageBrokerConfigurer 
 
     @Override
     public void configureClientInboundChannel(ChannelRegistration registration) {
-        if(webSocketAuthentication != null) {
-            registration.interceptors(createUserInterceptor(webSocketAuthentication));
-        }
+        registration.interceptors(createUserInterceptor());
 
     }
 
-//    @Bean
-//    @ConditionalOnMissingBean(WebSocketAuthentication.class)
-//    public WebSocketAuthentication webSocketAuthentication(){
-//        return (Message<?> message, MessageChannel channel) ->null;
-//    }
-
-    private ChannelInterceptor createUserInterceptor(WebSocketAuthentication webSocketAuthentication){
+    private ChannelInterceptor createUserInterceptor(){
         return new ChannelInterceptor() {
             @Override
             public Message<?> preSend(Message<?> message, MessageChannel channel) {
                 StompHeaderAccessor accessor = MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
+                String sessionId = accessor.getSessionId();
                 if (StompCommand.CONNECT.equals(accessor.getCommand())) {
-                    Object raw = message.getHeaders().get(SimpMessageHeaderAccessor.NATIVE_HEADERS);
-//					Object wsSessionId = message.getHeaders().get(SimpMessageHeaderAccessor.SESSION_ID_HEADER);
-//					Object userName = message.getHeaders().get(SimpMessageHeaderAccessor.USER_HEADER);
-                    accessor.getSessionId();
-                    accessor.getUser();
-                    if (raw instanceof Map) {
-                        Object name = ((Map) raw).get("name");
-                        if (name instanceof List) {
-//                            accessor.setUser(new WsUser(((List) name).get(0).toString(),accessor.getSessionId()));
-							accessor.setUser(webSocketAuthentication.authenticate(message,channel));
-                        }
+                    Object nativeHeaders = message.getHeaders().get(SimpMessageHeaderAccessor.NATIVE_HEADERS);
+                    Principal user = accessor.getUser();
+
+                    Principal principal;
+                    if(webSocketAuthentication != null){
+                        principal = webSocketAuthentication.authenticate(user, sessionId, nativeHeaders);
+                    }else{
+                        principal = user;
                     }
+                    if(principal != null){
+                        accessor.setUser(principal);
+                    }
+
+                    connectEventHandler.onConnect(principal,sessionId);
+
+                }else if(StompCommand.DISCONNECT.equals(accessor.getCommand())){
+                    Principal principal = accessor.getUser();
+                    disconnectEventHandler.onDisconnect(principal,sessionId);
                 }
                 return message;
             }
