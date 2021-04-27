@@ -63,13 +63,9 @@ public class WebSocketConfiguration implements WebSocketMessageBrokerConfigurer 
                     Object nativeHeaders = message.getHeaders().get(SimpMessageHeaderAccessor.NATIVE_HEADERS);
                     Principal user = accessor.getUser();
 
-                    Principal principal;
+                    Principal principal = accessor.getUser();
                     if(webSocketAuthentication != null){
                         principal = webSocketAuthentication.authenticate(user, sessionId, nativeHeaders);
-                    }else{
-                        principal = user;
-                    }
-                    if(principal != null){
                         accessor.setUser(principal);
                     }
 
