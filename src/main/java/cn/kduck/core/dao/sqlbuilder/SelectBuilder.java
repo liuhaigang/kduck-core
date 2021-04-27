@@ -422,7 +422,13 @@ public class SelectBuilder {
                 String leftAlias = joinOn.getLeftAlias();
                 processDefaultCondition(definer, entityDef, leftAlias+".");
             }
-            processDefaultCondition(definer, joinTable.getMainEntityDef(), "");
+
+            String alias = joinTable.getAlias();
+            if(StringUtils.hasText(alias)){
+                alias += ".";
+            }
+
+            processDefaultCondition(definer, joinTable.getMainEntityDef(), alias);
         }
     }
 
