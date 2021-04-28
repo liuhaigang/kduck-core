@@ -36,6 +36,9 @@ public class WebSocketConfiguration implements WebSocketMessageBrokerConfigurer 
     @Autowired(required = false)
     private DisconnectEventHandler disconnectEventHandler;
 
+    @Autowired(required = false)
+    private SubscribeEventHandler subscribeEventHandler;
+
     @Override
     public void configureMessageBroker(MessageBrokerRegistry config) {
         config.enableSimpleBroker("/topic");
@@ -59,7 +62,7 @@ public class WebSocketConfiguration implements WebSocketMessageBrokerConfigurer 
             public Message<?> preSend(Message<?> message, MessageChannel channel) {
                 StompHeaderAccessor accessor = MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
                 String sessionId = accessor.getSessionId();
-                if (StompCommand.CONNECT.equals(accessor.getCommand())) {
+                if (StompCommand.CONNECT.equals(accessor.getCommand()) && connectEventHandler != null) {
                     Object nativeHeaders = message.getHeaders().get(SimpMessageHeaderAccessor.NATIVE_HEADERS);
                     Principal user = accessor.getUser();
 
@@ -71,11 +74,26 @@ public class WebSocketConfiguration implements WebSocketMessageBrokerConfigurer 
 
                     connectEventHandler.onConnect(principal,sessionId);
 
-                }else if(StompCommand.DISCONNECT.equals(accessor.getCommand())){
+//                }else if (StompCommand.SUBSCRIBE.equals(accessor.getCommand()) && subscribeEventHandler != null) {
+//                    Principal principal = accessor.getUser();
+//                    subscribeEventHandler.onSubscribe(principal,sessionId);
+                }else if(StompCommand.DISCONNECT.equals(accessor.getCommand()) && disconnectEventHandler != null){
                     Principal principal = accessor.getUser();
                     disconnectEventHandler.onDisconnect(principal,sessionId);
                 }
                 return message;
+            }
+
+            @Override
+            public void postSend(Message<?> message, MessageChannel channel, boolean sent) {
+                StompHeaderAccessor accessor = MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
+                String sessionId = accessor.getSessionId();
+
+                if (StompCommand.SUBSCRIBE.equals(accessor.getCommand()) && subscribeEventHandler != null) {
+                    Principal principal = accessor.getUser();
+                    subscribeEventHandler.onSubscribe(principal,sessionId);
+                }
+
             }
         };
     }
