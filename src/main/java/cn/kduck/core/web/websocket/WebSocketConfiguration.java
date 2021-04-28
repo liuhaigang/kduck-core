@@ -74,9 +74,9 @@ public class WebSocketConfiguration implements WebSocketMessageBrokerConfigurer 
 
                     connectEventHandler.onConnect(principal,sessionId);
 
-//                }else if (StompCommand.SUBSCRIBE.equals(accessor.getCommand()) && subscribeEventHandler != null) {
-//                    Principal principal = accessor.getUser();
-//                    subscribeEventHandler.onSubscribe(principal,sessionId);
+                }else if (StompCommand.SUBSCRIBE.equals(accessor.getCommand()) && subscribeEventHandler != null) {
+                    Principal principal = accessor.getUser();
+                    subscribeEventHandler.onSubscribe(principal,sessionId);
                 }else if(StompCommand.DISCONNECT.equals(accessor.getCommand()) && disconnectEventHandler != null){
                     Principal principal = accessor.getUser();
                     disconnectEventHandler.onDisconnect(principal,sessionId);
@@ -84,17 +84,6 @@ public class WebSocketConfiguration implements WebSocketMessageBrokerConfigurer 
                 return message;
             }
 
-            @Override
-            public void postSend(Message<?> message, MessageChannel channel, boolean sent) {
-                StompHeaderAccessor accessor = MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
-                String sessionId = accessor.getSessionId();
-
-                if (StompCommand.SUBSCRIBE.equals(accessor.getCommand()) && subscribeEventHandler != null) {
-                    Principal principal = accessor.getUser();
-                    subscribeEventHandler.onSubscribe(principal,sessionId);
-                }
-
-            }
         };
     }
 }
