@@ -6,6 +6,8 @@ import org.springframework.core.convert.support.DefaultConversionService;
 import org.springframework.core.convert.support.GenericConversionService;
 import org.springframework.util.StringUtils;
 
+import java.io.Reader;
+import java.io.StringReader;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -31,6 +33,8 @@ public final class ConversionUtils {
         genericConversionService.addConverter(new DateConverter());
         genericConversionService.addConverter(new Boolean2IntegerConverter());
         genericConversionService.addConverter(new Integer2BooleanConverter());
+        genericConversionService.addConverter(new ReaderConverter());
+
     }
 
     public static <T> T convert(Object source, Class<T> targetType){
@@ -50,6 +54,15 @@ public final class ConversionUtils {
         public Boolean convert(Integer source) {
             if(source == null) return false;
             return source.intValue() > 0 ? true : false;
+        }
+    }
+
+    public static class ReaderConverter implements Converter<String, Reader>{
+
+        @Override
+        public Reader convert(String source) {
+            if(source == null) return null;
+            return new StringReader(source);
         }
     }
 

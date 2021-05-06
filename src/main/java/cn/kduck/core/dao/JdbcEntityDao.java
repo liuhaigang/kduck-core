@@ -27,6 +27,9 @@ import org.springframework.boot.ansi.AnsiOutput;
 import org.springframework.boot.ansi.AnsiStyle;
 import org.springframework.jdbc.core.*;
 import org.springframework.jdbc.support.JdbcUtils;
+import org.springframework.jdbc.support.lob.DefaultLobHandler;
+import org.springframework.jdbc.support.lob.LobCreator;
+import org.springframework.jdbc.support.lob.LobHandler;
 import org.springframework.util.Assert;
 
 import java.sql.*;
@@ -41,6 +44,8 @@ public class JdbcEntityDao {
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
+
+    private LobHandler lobHandler = new DefaultLobHandler();
 
 //    @Autowired
     private BeanDefDepository beanDefDepository;
@@ -104,6 +109,7 @@ public class JdbcEntityDao {
             printSql(-1,sqlObject.getSql(), sqlObject.getParamValueList(),null);
         }
 
+//        LobCreator lobCreator = lobHandler.getLobCreator();
         KduckPreparedStatementCreator psc = new KduckPreparedStatementCreator(sqlObject,keyHolder != null);
 //        KeyHolder keyHolder = new GeneratedKeyHolder();
         int[] returnResult = jdbcTemplate.execute(psc,ps ->{
@@ -180,9 +186,9 @@ public class JdbcEntityDao {
         private final boolean isBatch;
         private boolean paramArray;
 
-        public KduckPreparedStatementCreator(SqlObject sqlObject,boolean returnKey){
+        public KduckPreparedStatementCreator(SqlObject sqlObject,boolean returnKey ){
             this.sql = sqlObject.getSql();
-            paramValueList = sqlObject.getParamValueList();
+            this.paramValueList = sqlObject.getParamValueList();
             this.returnKey = returnKey;
             Assert.isTrue(paramValueList != null && !paramValueList.isEmpty(),"参数列表不能为空");
             Object value = paramValueList.get(0);
@@ -415,7 +421,18 @@ public class JdbcEntityDao {
 //                    throw new RuntimeException("在提供的字段定义集合中未找到指定列的字段定义：" + columnName);
                     continue;
                 }
-                Object resultValue = JdbcUtils.getResultSetValue(resultSet, i + 1, fieldDef.getJavaType());
+//                Object resultValue = JdbcUtils.getResultSetValue(resultSet, i + 1, fieldDef.getJavaType());
+
+                Object resultValue;
+                if(fieldDef.getJdbcType() == Types.CLOB || fieldDef.getJdbcType() == Types.NCLOB || fieldDef.getJdbcType() == Types.LONGVARCHAR || fieldDef.getJdbcType() == Types.LONGNVARCHAR){
+                    //处理lob字段转换为String
+                    resultValue = lobHandler.getClobAsString(resultSet, i + 1);
+                }else if(fieldDef.getJdbcType() == Types.BLOB || fieldDef.getJdbcType() == Types.LONGVARBINARY || fieldDef.getJdbcType() == Types.VARBINARY || fieldDef.getJdbcType() == Types.BINARY){
+                    //处理lob字段转换为byte[]
+                    resultValue = lobHandler.getBlobAsBytes(resultSet, i + 1);
+                }else{
+                    resultValue = JdbcUtils.getResultSetValue(resultSet, i + 1, fieldDef.getJavaType());
+                }
 
                 String attrName = fieldDef.getAttrName();
                 if(!columnLabel.equals(columnName)){

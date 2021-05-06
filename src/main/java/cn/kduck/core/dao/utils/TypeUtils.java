@@ -1,5 +1,6 @@
 package cn.kduck.core.dao.utils;
 
+import java.io.Reader;
 import java.sql.Types;
 import java.util.Date;
 
@@ -24,12 +25,15 @@ public final class TypeUtils {
         } else if (javaType == byte[].class){
             return Types.BLOB;
         }
+//        else if(javaType.isAssignableFrom(Reader.class)){
+//            return Types.CLOB;
+//        }
         //TODO more type!!!
         throw new RuntimeException("不支持的Jdbc类型转换："+javaType);
     }
 
     public static Class<?> javaType(int jdbcType){
-        if(jdbcType == Types.VARCHAR || jdbcType == Types.CHAR || jdbcType == Types.LONGVARCHAR || jdbcType == Types.CLOB || jdbcType == Types.NVARCHAR || jdbcType == Types.NCLOB || jdbcType == Types.NCHAR){
+        if(jdbcType == Types.VARCHAR || jdbcType == Types.CHAR || jdbcType == Types.LONGVARCHAR || jdbcType == Types.NVARCHAR || jdbcType == Types.NCHAR || jdbcType == Types.CLOB || jdbcType == Types.NCLOB){
             return String.class;
         } else if(jdbcType == Types.INTEGER || jdbcType == Types.TINYINT  || jdbcType == Types.SMALLINT || jdbcType == Types.BIT){
             return Integer.class;
@@ -42,6 +46,9 @@ public final class TypeUtils {
         } else if (jdbcType == Types.BLOB || jdbcType == Types.LONGVARBINARY || jdbcType == Types.BINARY){
             return byte[].class;
         }
+//        else if(jdbcType == Types.CLOB || jdbcType == Types.NCLOB){
+//            return Reader.class;
+//        }
         //TODO more type!!!
         throw new RuntimeException("不支持的Java类型转换："+jdbcType);
     }
