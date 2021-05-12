@@ -53,6 +53,10 @@ public class RemoteController {
                 continue;
             }
 
+            if(parameterTypes[i].isInterface()){
+                parameterTypes[i] = paramJsons[i].getClass();
+            }
+
             try {
                 Object obj = objectMapper.readValue(paramJsons[i].toString(), parameterTypes[i]);
                 args[i] = obj;

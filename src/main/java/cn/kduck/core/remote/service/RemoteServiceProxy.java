@@ -44,7 +44,7 @@ public class RemoteServiceProxy implements FactoryBean,ApplicationContextAware {
 
     public RemoteServiceProxy(Class proxyClass){
         this.proxyClass = proxyClass;
-
+        RemoteServiceDepository.addRemoteServiceClass(proxyClass);
     }
 
 //    @Override
