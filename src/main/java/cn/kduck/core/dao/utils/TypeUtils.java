@@ -24,6 +24,8 @@ public final class TypeUtils {
             return Types.NUMERIC;
         } else if (javaType == byte[].class){
             return Types.BLOB;
+        } else if (javaType == Boolean.class){
+            return Types.BOOLEAN;
         }
 //        else if(javaType.isAssignableFrom(Reader.class)){
 //            return Types.CLOB;
@@ -45,6 +47,8 @@ public final class TypeUtils {
             return Double.class;
         } else if (jdbcType == Types.BLOB || jdbcType == Types.LONGVARBINARY || jdbcType == Types.BINARY){
             return byte[].class;
+        } else if (jdbcType == Types.BOOLEAN){
+            return Boolean.class;
         }
 //        else if(jdbcType == Types.CLOB || jdbcType == Types.NCLOB){
 //            return Reader.class;
