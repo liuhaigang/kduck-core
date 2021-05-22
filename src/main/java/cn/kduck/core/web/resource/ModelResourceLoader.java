@@ -97,12 +97,18 @@ public class ModelResourceLoader implements InitializingBean, BeanFactoryAware {
                         continue;
                     }
 
+                    String className = classMetadata.getClassName();
+
+                    if(className.startsWith("cn.kduck.core") || className.startsWith("cn.kduck.security")){
+                        continue;
+                    }
+
                     Class<?> clazz;
                     try {
-                        clazz = Class.forName(classMetadata.getClassName(),false,this.getClass().getClassLoader());
+                        clazz = Class.forName(className,false,this.getClass().getClassLoader());
                     } catch (Throwable e) {
                         //TODO i18n
-                        logger.debug("类不存在或无法实例化（比如依赖的import类文件不存在）："+classMetadata.getClassName(), e);
+                        logger.debug("类不存在或无法实例化（比如依赖的import类文件不存在）："+ className, e);
                         continue;
                     }
                     ResourceValueMap r = processResource(clazz);
