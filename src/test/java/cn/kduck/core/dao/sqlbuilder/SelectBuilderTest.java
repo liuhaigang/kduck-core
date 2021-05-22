@@ -113,10 +113,12 @@ public class SelectBuilderTest {
 
         sqlBuiler = new SelectBuilder(userEntityDef,paramMap);
         sqlBuiler.bindFields("",BeanDefUtils.includeField(userEntityDef.getFieldList(),"userId"));
+        sqlBuiler.bindAggregate("USER_ID",AggregateType.COUNT);
         sqlBuiler.where("USER_NAME", ConditionType.CONTAINS,"userName")
                 .and("USER_NAME",ConditionType.NOT_IN,"userName")
                 .and("USER_NAME",ConditionType.IS_EMPTY);
-        sqlBuiler.bindAliasField("",BeanDefUtils.getByAttrName(userEntityDef.getFieldList(),"gender"),"aaa");
+        sqlBuiler.bindAliasField("",BeanDefUtils.getByAttrName(userEntityDef.getFieldList(),"gender"),"sex");
+        sqlBuiler.bindAlias("USER_ID","uid");
         printSql("单表查询-3",sqlBuiler);
 
         sqlBuiler = new SelectBuilder(userEntityDef, paramMap);
