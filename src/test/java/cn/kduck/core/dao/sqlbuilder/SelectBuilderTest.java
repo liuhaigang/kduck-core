@@ -336,6 +336,23 @@ public class SelectBuilderTest {
     }
 
     @Test
+    public void t010_GroupByHavingCondition() {
+        Map<String,Object> paramMap = new HashMap<>();
+        paramMap.put("userName","某某某");
+        paramMap.put("gender",1);
+
+        SelectBuilder sqlBuiler = new SelectBuilder(paramMap);
+        sqlBuiler.bindFields("a",userEntityDef.getFieldList())
+                .bindFields("b", BeanDefUtils.excludeField(orgUserEntityDef.getFieldList(),"userId"));
+        sqlBuiler.bindAggregate("a.USER_NAME",AggregateType.COUNT);
+        sqlBuiler.from("a",userEntityDef).innerJoin("b",orgUserEntityDef)
+                .where().and("a.USER_NAME", ConditionType.CONTAINS,"userName").groupBy("a.GENDER","a.USER_NAME")
+                .having().and("a.GENDER",ConditionType.EQUALS,"gender").orderBy().asc("a.USER_NAME");
+
+        printSql("分组查询查询",sqlBuiler);
+    }
+
+    @Test
     public void t100_Partial_Extend() {
         Map<String,Object> paramMap = new HashMap<>();
         paramMap.put("userName","某某某");

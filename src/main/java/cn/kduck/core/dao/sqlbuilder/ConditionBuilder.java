@@ -452,7 +452,7 @@ public abstract class ConditionBuilder {
      * 条件对象，用于包装单个条件。通过getCondition方法得到条件的SQL片段，并将参数名的部分拼装成"#{getAttrName}"的形式。
      * @author LiuHG
      */
-    private static class StandardCondition implements Condition {
+    static class StandardCondition implements Condition {
 
         private final String fieldName;
         private final ConditionType conditionType;
