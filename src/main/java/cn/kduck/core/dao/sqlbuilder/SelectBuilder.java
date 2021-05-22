@@ -36,8 +36,8 @@ public class SelectBuilder {
 
     private static final String FIELD_NAME_SPLIT_PATTERN = "[:]";
 
-    private static final String SQL_HEAD = "SELECT {*} ";
-    private static final String SQL_DISTINCT_HEAD = "SELECT DISTINCT {*} ";
+    private static final String SQL_HEAD = "SELECT{hint} {*} ";
+    private static final String SQL_DISTINCT_HEAD = "SELECT{hint} DISTINCT {*} ";
 
     private final String sql;
 
@@ -61,6 +61,8 @@ public class SelectBuilder {
     private Map<String, AggregateType> aggregateMap = new HashMap<>();
 
     private boolean needWhere = true;
+
+    private String hint;
 
     public SelectBuilder(){
         this(Collections.emptyMap());
@@ -354,7 +356,11 @@ public class SelectBuilder {
             return sql;
         }
 
-        SqlStringSplicer sqlBuidler = new SqlStringSplicer(sql);
+        String hint = getHint();
+        hint = hint == null ? "" : " /*+ " + hint + " */";
+        String baseSql = sql.replaceFirst("\\{hint\\}",hint);
+
+        SqlStringSplicer sqlBuidler = new SqlStringSplicer(baseSql);
 
         if(joinTable != null){
             List<JoinOn> joinOnList = joinTable.getJoinOnList();
@@ -476,6 +482,14 @@ public class SelectBuilder {
             }
         }
         return false;
+    }
+
+    public String getHint() {
+        return hint;
+    }
+
+    public void setHint(String hint) {
+        this.hint = hint;
     }
 
     public QuerySupport build(){
