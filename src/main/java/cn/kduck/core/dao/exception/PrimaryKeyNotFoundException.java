@@ -1,4 +1,4 @@
-package cn.kduck.core.service.exception;
+package cn.kduck.core.dao.exception;
 
 /**
  * LiuHG

@@ -10,6 +10,7 @@ import org.springframework.context.ApplicationContextAware;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -49,7 +50,7 @@ public class QueryFactory implements ApplicationContextAware {
         }catch (NoSuchBeanDefinitionException e){
             throw new QueryNotFoundException("没有找到Class为" + className + "的QueryCreator",e);
         }
-        QuerySupport query = queryCreator.createQuery(paramMap, depository);
+        QuerySupport query = queryCreator.createQuery(new HashMap(paramMap), depository);
         if(query instanceof CustomQueryBean){
             ((CustomQueryBean)query).setGenerateBy(queryCreator.getClass().getSimpleName());
         }
