@@ -7,6 +7,7 @@ import cn.kduck.core.event.LocalEventBus;
 import cn.kduck.core.event.RemoteEventBus;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.springframework.amqp.core.AmqpAdmin;
 import org.springframework.amqp.core.MessageListener;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
@@ -63,13 +64,14 @@ public class EventConfiguration {
 
         @Bean
         @ConditionalOnBean(EventListener.class)
-        public SimpleMessageListenerContainer simpleMessageListenerContainer(ConnectionFactory connectionFactory){
+        public SimpleMessageListenerContainer simpleMessageListenerContainer(ConnectionFactory connectionFactory, AmqpAdmin amqpAdmin){
             SimpleMessageListenerContainer messageListenerContainer = new SimpleMessageListenerContainer(connectionFactory);
             messageListenerContainer.setMessageListener(messageListener());
             for (EventListener eventListener : eventListenerList) {
                 String queueName = "kduckQueue." + eventListener.eventCode();
-                messageListenerContainer.addQueues(new Queue(queueName));
-
+                Queue queue = new Queue(queueName);
+                messageListenerContainer.addQueues(queue);
+                amqpAdmin.declareQueue(queue);
             }
             return messageListenerContainer;
         }
