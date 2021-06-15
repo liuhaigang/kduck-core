@@ -688,6 +688,45 @@ public class DefaultService {
         return new ValueMapList(recordList);
     }
 
+    public ValueMapList list(QuerySupport queryBean,int maxRow){
+        return list(queryBean, maxRow, null);
+    }
+
+    public ValueMapList list(QuerySupport queryBean,int maxRow, FieldFilter filter){
+        return list(queryBean,0,maxRow,filter);
+    }
+
+    public ValueMapList list(QuerySupport queryBean,int firstResult,int maxRow, FieldFilter filter){
+        List<Map<String, Object>> recordList = jdbcEntityDao.executeQuery(queryBean, firstResult, maxRow, filter);
+        return new ValueMapList(recordList);
+    }
+
+    public <R extends ValueMap> List<R> listForBean(QuerySupport queryBean,int maxRow, Function<Map,R> bean){
+        return listForBean(queryBean, maxRow, null,bean);
+    }
+
+    public <R extends ValueMap> List<R> listForBean(QuerySupport queryBean,int maxRow, FieldFilter filter, Function<Map,R> bean){
+        return listForBean(queryBean,0,maxRow,filter,bean);
+    }
+
+    public <R extends ValueMap> List<R> listForBean(QuerySupport queryBean,int firstResult,int maxRow, Function<Map,R> bean){
+        return listForBean(queryBean,firstResult,maxRow,null,bean);
+    }
+
+    public <R extends ValueMap> List<R> listForBean(QuerySupport queryBean,int firstResult,int maxRow, FieldFilter filter, Function<Map,R> bean){
+        List<Map<String, Object>> recordList = jdbcEntityDao.executeQuery(queryBean, firstResult, maxRow, filter);
+        if(recordList.isEmpty()){
+            return Collections.emptyList();
+        }
+
+        List<R> resultList = new ArrayList(recordList.size());
+        for (Map<String, Object> value : recordList) {
+            R beanObject = bean.apply(value);
+            resultList.add(beanObject);
+        }
+        return resultList;
+    }
+
     private List<Map<String, Object>> executeQuery(QuerySupport queryBean,Page page, FieldFilter filter){
         Assert.notNull(queryBean,"QueryBean不能为null");
         int firstResult = -1;
