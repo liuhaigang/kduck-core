@@ -2,8 +2,12 @@ package cn.kduck.core.event;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.amqp.core.*;
+import org.springframework.amqp.core.AmqpAdmin;
+import org.springframework.amqp.core.AmqpTemplate;
+import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.Binding.DestinationType;
+import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.core.TopicExchange;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -27,18 +31,18 @@ public class RemoteEventBus implements EventPublisher, InitializingBean {
 
     private List<String> routeKeyList = new ArrayList<>();
 
-    @Autowired(required = false)
-    private List<EventListener> listenerList;
-
-    public RemoteEventBus(List<EventListener> listenerList){
-        this.listenerList = listenerList;
-    }
+//    @Autowired(required = false)
+//    private List<EventListener> listenerList;
+//
+//    public RemoteEventBus(List<EventListener> listenerList){
+//        this.listenerList = listenerList;
+//    }
 
     @Override
     public void publish(Event event) {
-        if(listenerList == null){
-            return;
-        }
+//        if(listenerList == null){
+//            return;
+//        }
 
         String key = event.getCode() + "." + event.getType();
         if(!routeKeyList.contains(key)){

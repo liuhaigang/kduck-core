@@ -84,7 +84,8 @@ public class EventConfiguration {
         @Bean
         public EventPublisher remoteEventBus(){
             logger.info("Event bus class :" + RemoteEventBus.class.getName());
-            return new RemoteEventBus(eventListenerList);
+//            return new RemoteEventBus(eventListenerList);
+            return new RemoteEventBus();
         }
     }
 
