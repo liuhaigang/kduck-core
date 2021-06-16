@@ -1,7 +1,15 @@
 package cn.kduck.core.utils;
 
+import cn.kduck.core.service.ValueMap;
+
 import java.lang.reflect.Array;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 
 /**
@@ -113,6 +121,33 @@ public final class ValueMapUtils {
         return bean.apply(valueMap);
     }
 
+    public static Map<Object,List<ValueMap>> groupData(String groupName,List<Map> dataList){
+        return groupData(groupName,dataList,ValueMap::new);
+    }
+
+    public static <R extends ValueMap> Map<Object,List<R>> groupData(String groupName, List<Map> dataList, Function<Map,R> bean){
+        Map<Object,List<R>> resultMap = new HashMap<>();
+        List<R> groupDataList = null;
+        Object groupValue = null;
+        for (Map dataMap : dataList) {
+            Object value = dataMap.get(groupName);
+            if(!value.equals(groupValue)){
+                if(groupValue != null){
+                    resultMap.put(groupValue,groupDataList);
+                }
+                groupDataList = new ArrayList();
+                groupValue = value;
+            }
+            groupDataList.add(bean.apply(dataMap));
+        }
+
+        if(!dataList.isEmpty()){
+            resultMap.put(groupValue,groupDataList);
+        }
+
+        return resultMap;
+    }
+
     private static <T> T getValue(Object v,Class<T> cls){
         return getValue(v,cls,null);
     }
@@ -127,5 +162,6 @@ public final class ValueMapUtils {
         }
         return ConversionUtils.convert(v,cls);
     }
+
 
 }
