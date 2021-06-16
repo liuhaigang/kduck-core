@@ -1,6 +1,7 @@
 package cn.kduck.core.utils;
 
 import cn.kduck.core.service.ValueMap;
+import cn.kduck.core.service.ValueMapList;
 
 import java.lang.reflect.Array;
 import java.util.ArrayList;
@@ -121,11 +122,15 @@ public final class ValueMapUtils {
         return bean.apply(valueMap);
     }
 
-    public static Map<Object,List<ValueMap>> groupData(String groupName,List<Map> dataList){
+    public static Map<Object,List<ValueMap>> groupData(String groupName, ValueMapList dataList){
         return groupData(groupName,dataList,ValueMap::new);
     }
 
-    public static <R extends ValueMap> Map<Object,List<R>> groupData(String groupName, List<Map> dataList, Function<Map,R> bean){
+    public static Map<Object,List<ValueMap>> groupData(String groupName,List<? extends Map> dataList){
+        return groupData(groupName,dataList,ValueMap::new);
+    }
+
+    public static <R extends ValueMap> Map<Object,List<R>> groupData(String groupName, List<? extends Map> dataList, Function<Map,R> bean){
         Map<Object,List<R>> resultMap = new HashMap<>();
         List<R> groupDataList = null;
         Object groupValue = null;
