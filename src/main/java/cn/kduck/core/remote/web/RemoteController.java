@@ -1,9 +1,13 @@
 package cn.kduck.core.remote.web;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import cn.kduck.core.remote.service.RemoteServiceDepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.util.Assert;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
 import java.lang.reflect.Method;
@@ -53,8 +57,20 @@ public class RemoteController {
                 continue;
             }
 
-            if(parameterTypes[i].isInterface()){
-                parameterTypes[i] = paramJsons[i].getClass();
+            Class componentType = parameterTypes[i];
+            boolean isArray = false;
+            if(parameterTypes[i].isArray()){
+                componentType = parameterTypes[i].getComponentType();
+                isArray = true;
+            }
+
+            if(componentType.isInterface()){
+                if(isArray){
+                    parameterTypes[i] = String[].class;
+                }else{
+                    parameterTypes[i] = paramJsons[i].getClass();
+                }
+
             }
 
             try {
