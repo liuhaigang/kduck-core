@@ -42,6 +42,9 @@ public class JdbcEntityDao {
 
     private ObjectMapper jsonMapper = new ObjectMapper();
 
+    //慢sql的输出阈值，500毫秒
+    public static final int SLOW_SQL_MILLISECOND_THRESHOLD = 500;
+
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
@@ -142,7 +145,7 @@ public class JdbcEntityDao {
         });
 
         //如果输出sql模式为显示执行时间，则仅能在操作后输出sql
-        if (showSql && showSqlMode == ShowSqlMode.TIME_SQL) {
+        if (showSql && showSqlMode != ShowSqlMode.SQL) {
             long endTime = System.currentTimeMillis();
             printSql((endTime-startTime),sqlObject.getSql(), sqlObject.getParamValueList(),null);
         }
@@ -361,7 +364,7 @@ public class JdbcEntityDao {
             return recordMapList;
         }, paramList.toArray());
 
-        if (showSql && showSqlMode == ShowSqlMode.TIME_SQL) {
+        if (showSql && showSqlMode != ShowSqlMode.SQL) {
             long endTime = System.currentTimeMillis();
             printSql((endTime-startTime),sql, paramList,signInfo);
         }
@@ -490,7 +493,7 @@ public class JdbcEntityDao {
             return 0L;
         }, paramList.toArray());
 
-        if (showSql && showSqlMode == ShowSqlMode.TIME_SQL) {
+        if (showSql && showSqlMode != ShowSqlMode.SQL) {
             long endTime = System.currentTimeMillis();
             printSql((endTime-startTime),countSql, paramList,signInfo);
         }
@@ -545,7 +548,7 @@ public class JdbcEntityDao {
             return statement.executeUpdate();
         });
 
-        if (showSql && showSqlMode == ShowSqlMode.TIME_SQL) {
+        if (showSql && showSqlMode != ShowSqlMode.SQL) {
             long endTime = System.currentTimeMillis();
             printSql((endTime-startTime),sql, valueList,null);
         }
@@ -558,6 +561,9 @@ public class JdbcEntityDao {
     }
 
     private void printSql(long time,String sql,List<Object> params,SignatureInfo signatureInfo){
+        if(showSqlMode == ShowSqlMode.JUST_SLOW_SQL && time < SLOW_SQL_MILLISECOND_THRESHOLD){
+            return;
+        }
         printSql(time,null,sql, params,signatureInfo);
     }
 
@@ -586,7 +592,7 @@ public class JdbcEntityDao {
 
         String spendTime = "";
         if(time >= 0 ){
-            AnsiElement color = time >= 500 ? AnsiColor.RED:AnsiColor.YELLOW;
+            AnsiElement color = time >= SLOW_SQL_MILLISECOND_THRESHOLD ? AnsiColor.RED:AnsiColor.YELLOW;
             spendTime = AnsiOutput.toString(color,"(" + time + "ms)");
         }
 
@@ -640,7 +646,9 @@ public class JdbcEntityDao {
     }
 
     private enum ShowSqlMode {
-        SQL,TIME_SQL;
+        SQL,
+        TIME_SQL,
+        JUST_SLOW_SQL;
     }
 
 
