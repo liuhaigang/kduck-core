@@ -2,18 +2,21 @@ package cn.kduck.core.configstore.scan;
 
 import cn.kduck.core.configstore.ConfigStoreReloader;
 import cn.kduck.core.configstore.annotation.ConfigObject;
+import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.FactoryBean;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
 import org.springframework.core.annotation.AnnotationUtils;
 
-public class ConfigStoreProxy implements FactoryBean {
+public class ConfigStoreProxy implements FactoryBean, ApplicationContextAware {
 
     private final Class configClass;
-    private final ConfigStoreReloader configStoreReloader;
     private Object configObject;
 
-    public ConfigStoreProxy(Class configClass, ConfigStoreReloader configStoreReloader){
+    private ApplicationContext applicationContext;
+
+    public ConfigStoreProxy(Class configClass){
         this.configClass = configClass;
-        this.configStoreReloader = configStoreReloader;
     }
 
     @Override
@@ -32,6 +35,7 @@ public class ConfigStoreProxy implements FactoryBean {
 
     private Object processConfigStore(String configCode,Class configClass) throws Exception{
         Object configObject = configClass.newInstance();
+        ConfigStoreReloader configStoreReloader = applicationContext.getBean(ConfigStoreReloader.class);
         return configStoreReloader.reloadValue(configCode,configObject);
     }
 
@@ -42,5 +46,10 @@ public class ConfigStoreProxy implements FactoryBean {
 
     public Class getConfigClass() {
         return configClass;
+    }
+
+    @Override
+    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
+        this.applicationContext = applicationContext;
     }
 }

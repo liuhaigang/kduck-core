@@ -27,9 +27,6 @@ public class GlobalErrorController extends AbstractErrorController {
 	public static final String GLOBAL_ERROR_MESSAGE = "GLOBAL_ERROR_MESSAGE";
 	public static final String GLOBAL_ERROR_CODE = "GLOBAL_ERROR_CODE";
 
-	@Value("${server.error.path:${error.path:/error}}")
-	private String errorPath;
-	
 	public GlobalErrorController(ErrorAttributes errorAttributes, List<ErrorViewResolver> errorViewResolvers) {
 		super(errorAttributes,errorViewResolvers);
 	}
@@ -39,7 +36,7 @@ public class GlobalErrorController extends AbstractErrorController {
 			HttpServletResponse response) {
 		HttpStatus status = getStatus(request);
 		Map<String, Object> model = Collections.unmodifiableMap(getErrorAttributes(
-				request, false));
+				request, ErrorAttributeOptions.defaults()));
 		response.setStatus(status.value());
 		ModelAndView modelAndView = resolveErrorView(request, response, status, model);
 		return (modelAndView == null ? new ModelAndView("error", model) : modelAndView);
@@ -68,9 +65,4 @@ public class GlobalErrorController extends AbstractErrorController {
 		return new JsonObject(responseEntity.getBody(),errorCode,message.toString());
 	}
 
-	@Override
-	public String getErrorPath() {
-		return errorPath;
-	}
-	
 }

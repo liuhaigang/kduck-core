@@ -78,7 +78,7 @@ public final class ConversionUtils {
         @Override
         public Date convert(String dateValue) {
             String value = dateValue.trim();
-            if (StringUtils.isEmpty(value)) {
+            if (!StringUtils.hasText(value)) {
                 return null;
             }
             if (dateValue.matches("^\\d{4}-\\d{1,2}$")) {
