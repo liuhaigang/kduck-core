@@ -38,7 +38,7 @@ public class RemoteServiceScannerConfigurer implements BeanDefinitionRegistryPos
         if(logger.isInfoEnabled()){
             logger.info("Scan proxy service packages:" + Arrays.toString(packages.toArray()));
         }
-
+        packages.add("cn.kduck");
         scanner.scan(StringUtils.toStringArray(packages));
     }
 

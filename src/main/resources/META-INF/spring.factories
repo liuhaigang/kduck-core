@@ -1,3 +1,4 @@
 org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
 cn.kduck.core.autoconfigure.ConfigStoreAutoConfiguration,\
-cn.kduck.core.autoconfigure.RemoteAutoConfiguration
+cn.kduck.core.autoconfigure.RemoteAutoConfiguration,\
+cn.kduck.core.autoconfigure.KduckAutoConfiguration
