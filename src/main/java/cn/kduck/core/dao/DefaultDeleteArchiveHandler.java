@@ -6,6 +6,7 @@ import cn.kduck.core.dao.definition.BeanEntityDef;
 import cn.kduck.core.dao.definition.BeanFieldDef;
 import cn.kduck.core.service.DefaultService;
 import cn.kduck.core.service.ValueBean;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.Date;
 import java.util.List;
@@ -16,7 +17,8 @@ import java.util.Map;
  */
 public class DefaultDeleteArchiveHandler extends DefaultService implements DeleteArchiveHandler{
 
-    private ObjectMapper objectMapper = new ObjectMapper();
+    @Autowired
+    private ObjectMapper objectMapper;
 
     private static final String CODE_DELETE_ARCHIVE = "K_DELETE_ARCHIVE";
 
