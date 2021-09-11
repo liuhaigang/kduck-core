@@ -447,8 +447,15 @@ public class JdbcEntityDao {
         }else{
 
             for (int i = 0; i < columnCount; i++) {
+                String columnName = metaData.getColumnName(i + 1);
                 String columnLabel = metaData.getColumnLabel(i + 1);
-                String attrName = attrNameGenerator.genAlias(null,metaData.getTableName(i + 1),columnLabel);
+
+                String attrName;
+                if(columnLabel.equals(columnName)){
+                    attrName = attrNameGenerator.genAlias(null,metaData.getTableName(i + 1),columnLabel);
+                }else{
+                    attrName = columnLabel;
+                }
 
                 Object resultValue = JdbcUtils.getResultSetValue(resultSet, i + 1);
 
