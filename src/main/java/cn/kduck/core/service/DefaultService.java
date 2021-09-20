@@ -261,8 +261,12 @@ public class DefaultService {
      * @return 数据的主键值
      */
     public Serializable[] batchAdd(String entityDefName, Map[] valueMaps, Map<String,Object> extParams){
+        return batchAdd(entityDefName,valueMaps,extParams,true);
+    }
+
+    public Serializable[] batchAdd(String entityDefName, Map[] valueMaps, Map<String,Object> extParams,boolean resetPk){
         ValueBean[] valueBeans = convertValueBeans(entityDefName, valueMaps, extParams);
-        return batchAdd(valueBeans,true);
+        return batchAdd(valueBeans,resetPk);
     }
 
     private ValueBean[] convertValueBeans(String entityDefName, Map[] valueMaps, Map<String, Object> extParams) {
