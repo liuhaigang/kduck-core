@@ -67,14 +67,29 @@ public class EventConfiguration {
         public SimpleMessageListenerContainer simpleMessageListenerContainer(ConnectionFactory connectionFactory, AmqpAdmin amqpAdmin){
             SimpleMessageListenerContainer messageListenerContainer = new SimpleMessageListenerContainer(connectionFactory);
             messageListenerContainer.setMessageListener(messageListener());
+
             for (EventListener eventListener : eventListenerList) {
-                String queueName = "kduckQueue." + eventListener.eventCode();
+//                String md5 = DigestUtils.md5DigestAsHex(eventListener.getClass().getName().getBytes());
+                //FIXME
+                String key = eventListener.eventCode() + "." + eventListener.eventType();
+                String queueName = "kduckQueue." + key;
                 Queue queue = new Queue(queueName);
                 messageListenerContainer.addQueues(queue);
                 amqpAdmin.declareQueue(queue);
             }
+
             return messageListenerContainer;
         }
+
+//        private String getIpAdress(){
+//            InetAddress address = null;
+//            try {
+//                address = InetAddress.getLocalHost();
+//            } catch (UnknownHostException e) {
+//                throw new RuntimeException("获取服务器IP错误",e);
+//            }
+//            return address.getHostAddress();
+//        }
 
         public RemoteEventConfiguration(ObjectProvider<EventListener> objectProvider){
             List<EventListener> eventListenerList = new ArrayList<>(objectProvider.stream().collect(Collectors.toList()));

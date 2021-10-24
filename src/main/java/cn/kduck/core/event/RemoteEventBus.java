@@ -16,7 +16,7 @@ import java.util.List;
 
 public class RemoteEventBus implements EventPublisher, InitializingBean {
 
-    private final String KDUCK_EVENT_EXCHANGE_NAME = "kduckExchange";
+    public final static String KDUCK_EVENT_EXCHANGE_NAME = "kduckExchange";
 
     private ObjectMapper objectMapper = new ObjectMapper();
 
@@ -47,10 +47,10 @@ public class RemoteEventBus implements EventPublisher, InitializingBean {
         String key = event.getCode() + "." + event.getType();
         if(!routeKeyList.contains(key)){
 
-            String queueName = "kduckQueue." + event.getCode();
+            String queueName = "kduckQueue." +key;
             Queue queue = new Queue(queueName);
             amqpAdmin.declareQueue(queue);
-            amqpAdmin.declareBinding(new Binding(queueName, DestinationType.QUEUE,KDUCK_EVENT_EXCHANGE_NAME,key,null));
+            amqpAdmin.declareBinding(new Binding(queueName, DestinationType.QUEUE,KDUCK_EVENT_EXCHANGE_NAME,key + ".#",null));
 
 //            if(messageListenerContainer != null){
 //                messageListenerContainer.addQueues(queue);
