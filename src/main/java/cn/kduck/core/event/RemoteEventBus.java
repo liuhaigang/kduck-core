@@ -45,19 +45,19 @@ public class RemoteEventBus implements EventPublisher, InitializingBean {
 //        }
 
         String key = event.getCode() + "." + event.getType();
-        if(!routeKeyList.contains(key)){
-
-            String queueName = "kduckQueue." +key;
-            Queue queue = new Queue(queueName);
-            amqpAdmin.declareQueue(queue);
-            amqpAdmin.declareBinding(new Binding(queueName, DestinationType.QUEUE,KDUCK_EVENT_EXCHANGE_NAME,key + ".#",null));
-
-//            if(messageListenerContainer != null){
-//                messageListenerContainer.addQueues(queue);
-//            }
-
-            routeKeyList.add(key);
-        }
+//        if(!routeKeyList.contains(key)){
+//
+//            String queueName = "kduckQueue." + key;
+//            Queue queue = new Queue(queueName);
+//            amqpAdmin.declareQueue(queue);
+//            amqpAdmin.declareBinding(new Binding(queueName, DestinationType.QUEUE,KDUCK_EVENT_EXCHANGE_NAME,key + ".#",null));
+//
+////            if(messageListenerContainer != null){
+////                messageListenerContainer.addQueues(queue);
+////            }
+//
+//            routeKeyList.add(key);
+//        }
 
         String message;
         try {
