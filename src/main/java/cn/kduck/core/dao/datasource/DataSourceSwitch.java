@@ -31,6 +31,10 @@ public final class DataSourceSwitch {
     	dsKeyThreadLocal.set(dsName);
     }
 
+    /**
+     * 根据条件切换数据源，如果未匹配到合适的数据源则抛出异常。
+     * @param conditionObj
+     */
     public static void switchByCondition(Object conditionObj){
         Assert.notEmpty(switchMatcherMap,"无法根据条件切换数据源，目前没有任何切换条件对象");
         Iterator<DataSourceMatcher> conditionIterator = switchMatcherMap.keySet().iterator();
@@ -45,6 +49,31 @@ public final class DataSourceSwitch {
         }
 
         throw new RuntimeException("数据源切换失败，没有合适的匹配器："+conditionObj.getClass());
+    }
+
+    /**
+     * 根据条件切换数据源，如果未匹配到合适的数据源则使用defaultDsName指定的数据源。
+     * @param conditionObj
+     * @param defaultDsName 当未匹配到合适的数据源则使用该数据源。
+     * @return true 匹配到合适的数据源 false 未匹配到合适的数据源
+     */
+    public static boolean switchByCondition(Object conditionObj,String defaultDsName){
+        if(switchMatcherMap.isEmpty()){
+            switchByName(defaultDsName);
+            return false;
+        }
+        Iterator<DataSourceMatcher> conditionIterator = switchMatcherMap.keySet().iterator();
+        while(conditionIterator.hasNext()){
+            DataSourceMatcher condition = conditionIterator.next();
+            if(condition.supports(conditionObj.getClass()) && condition.match(conditionObj)){
+                String dsName = switchMatcherMap.get(condition);
+                cacheKeyThreadLocal.set(get());
+                dsKeyThreadLocal.set(dsName);
+                return true;
+            }
+        }
+        switchByName(defaultDsName);
+        return false;
     }
 
     /**
@@ -65,6 +94,14 @@ public final class DataSourceSwitch {
     public static void resetDefault(){
         cacheKeyThreadLocal.set(get());
         dsKeyThreadLocal.set(lookupKeys[0]);
+    }
+
+    /**
+     * 获取默认数据源名，即配置的第一个数据源。
+     * @return
+     */
+    public static String getDefaultDsName(){
+        return lookupKeys[0];
     }
 
     public static void remove(){
