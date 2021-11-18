@@ -6,6 +6,7 @@ import cn.kduck.core.remote.web.RemoteMethod;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.FactoryBean;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.core.ParameterizedTypeReference;
@@ -16,6 +17,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
@@ -28,7 +30,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class RemoteServiceProxy implements FactoryBean,ApplicationContextAware {
+public class RemoteServiceProxy implements FactoryBean,ApplicationContextAware, InitializingBean {
 
     private String serviceName;
     private final Class proxyClass;
@@ -42,9 +44,10 @@ public class RemoteServiceProxy implements FactoryBean,ApplicationContextAware {
 
     private RestTemplate restTemplate;
 
+    private String serviceNamePrefix;
+
     public RemoteServiceProxy(Class proxyClass){
         this.proxyClass = proxyClass;
-        RemoteServiceDepository.addRemoteServiceClass(proxyClass);
     }
 
 //    @Override
@@ -64,12 +67,15 @@ public class RemoteServiceProxy implements FactoryBean,ApplicationContextAware {
     @Override
     public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
         this.applicationContext = applicationContext;
+
+        Environment envBean = applicationContext.getBean(Environment.class);
+        serviceNamePrefix = envBean.getProperty("kduck.proxy.service.prefix");
     }
 
     @Override
     public Object getObject() {
         ProxyService proxyService = AnnotationUtils.findAnnotation(proxyClass, ProxyService.class);
-        serviceName = proxyService.serviceName();
+        serviceName = formatServiceName(proxyService.serviceName());
         servicePath = proxyService.servicePaths();
 
         if(serviceImpl != null){
@@ -108,6 +114,13 @@ public class RemoteServiceProxy implements FactoryBean,ApplicationContextAware {
         }
     }
 
+    private String formatServiceName(String serviceName){
+        if(StringUtils.hasText(serviceNamePrefix)){
+            return serviceNamePrefix + "-" + serviceName;
+        }
+        return serviceName;
+    }
+
     @Override
     public Class<?> getObjectType() {
         return proxyClass;
@@ -119,6 +132,13 @@ public class RemoteServiceProxy implements FactoryBean,ApplicationContextAware {
 
     public boolean isClient() {
         return isClient;
+    }
+
+    @Override
+    public void afterPropertiesSet() throws Exception {
+        ProxyService proxyService = AnnotationUtils.findAnnotation(proxyClass, ProxyService.class);
+        serviceName = formatServiceName(proxyService.serviceName());
+        RemoteServiceDepository.addRemoteServiceClass(serviceName,proxyClass);
     }
 
     public static class ProxyServiceImpl implements InvocationHandler {

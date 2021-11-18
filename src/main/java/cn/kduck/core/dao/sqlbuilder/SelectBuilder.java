@@ -236,7 +236,7 @@ public class SelectBuilder {
         if(aliasFieldList != null){
             for (AliasField field : aliasFieldList){
                 String fName = field.getFieldDef().getFieldName();
-                if(fName.equals(aliasFieldName)){
+                if(fName.equalsIgnoreCase(aliasFieldName)){
                     field.setAlias(fieldAlias);
                     break;
                 }

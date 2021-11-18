@@ -18,9 +18,7 @@ public class RemoteServiceDepository {
         serviceDepository.put(serviceName,serviceObject);
     }
 
-    static void addRemoteServiceClass(Class proxyClass){
-        ProxyService proxyService = AnnotationUtils.findAnnotation(proxyClass, ProxyService.class);
-        String serviceName = proxyService.serviceName();
+    static void addRemoteServiceClass(String serviceName,Class proxyClass){
         serviceClassDepository.put(serviceName,proxyClass);
     }
 
