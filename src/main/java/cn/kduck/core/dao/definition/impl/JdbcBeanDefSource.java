@@ -236,7 +236,7 @@ public class JdbcBeanDefSource implements BeanDefSource {
 
     @Override
     public BeanEntityDef reloadEntity(String entityCode) {
-        //FIXME entityCode为编码，但下方接口参数需要表名，因为现在编码和表名一致，因此暂时可以是用。
+        //FIXME entityCode为编码，但下方接口参数需要表名，因为现在编码和表名一致，因此暂时可以使用。等以后用实体编码置换成表名。
         List<BeanEntityDef> beanEntityDefs = listEntityDefFromTable(entityCode);
         if(beanEntityDefs == null || beanEntityDefs.isEmpty()) return null;
         Assert.isTrue(beanEntityDefs.size() == 1,"根据实体编码查询出的实体多余1条：" + entityCode);

@@ -62,7 +62,7 @@ public class OperateIdentificationInterceptor implements HandlerInterceptor {
 
         public void addOperateObject(OperateObject operateObject){
             if(operateObjectList.size() >= max){
-                logger.warn("不缓存当前操作对象，以到达限制数量：" + max);
+                logger.warn("不能缓存当前操作对象，已经到达限制数量：" + max);
                 return;
             }
 //            cleanOperateObject(operateObject);
