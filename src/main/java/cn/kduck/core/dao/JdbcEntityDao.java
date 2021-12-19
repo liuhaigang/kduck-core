@@ -25,6 +25,7 @@ import org.springframework.boot.ansi.AnsiColor;
 import org.springframework.boot.ansi.AnsiElement;
 import org.springframework.boot.ansi.AnsiOutput;
 import org.springframework.boot.ansi.AnsiStyle;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.jdbc.core.*;
 import org.springframework.jdbc.support.JdbcUtils;
 import org.springframework.jdbc.support.lob.DefaultLobHandler;
@@ -63,6 +64,7 @@ public class JdbcEntityDao {
     private List<DatabaseDialect> databaseDialectList;
 
     @Autowired(required = false)
+    @Lazy
     private DeleteArchiveHandler deleteArchiveHandler;
 
     @Value("${kduck.showSql.enabled:false}")

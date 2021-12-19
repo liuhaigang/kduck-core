@@ -74,8 +74,8 @@ public class WebConfiguration implements WebMvcConfigurer, ApplicationContextAwa
 //    @Autowired
 //    private BeanDefDepository beanDefDepository;
 
-    @Autowired
-    private RequestMappingHandlerAdapter handlerAdapter;
+//    @Autowired
+//    private RequestMappingHandlerAdapter handlerAdapter;
 
     @Autowired(required = false)
     private OperateInfoHandler operateInfoHandler;
@@ -197,7 +197,7 @@ public class WebConfiguration implements WebMvcConfigurer, ApplicationContextAwa
 
     @Bean
     @ConditionalOnMissingBean(value=RestTemplate.class)
-    public RestTemplate commonRestTemplate (){
+    public RestTemplate commonRestTemplate (RequestMappingHandlerAdapter handlerAdapter){
 
         RestTemplate restTemplate = new RestTemplate();
 
@@ -255,6 +255,7 @@ public class WebConfiguration implements WebMvcConfigurer, ApplicationContextAwa
 
     @Override
     public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
+//        handlerAdapter = applicationContext.getBean(ObjectProvider<EventListener>);
         this.applicationContext = applicationContext;
     }
 
