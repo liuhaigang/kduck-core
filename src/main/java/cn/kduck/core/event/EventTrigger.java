@@ -2,6 +2,7 @@ package cn.kduck.core.event;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import cn.kduck.core.service.ValueMap;
+import org.springframework.aop.support.AopUtils;
 import org.springframework.core.ResolvableType;
 
 import java.io.IOException;
@@ -12,7 +13,11 @@ public class EventTrigger {
     private ObjectMapper objectMapper = new ObjectMapper();
 
     public void onEvent(Event event, EventListener eventListener) {
-        ResolvableType resolvableType = ResolvableType.forClass(eventListener.getClass());
+        Class listenerClass = eventListener.getClass();
+        if(AopUtils.isAopProxy(eventListener)){
+            listenerClass = AopUtils.getTargetClass(eventListener);
+        }
+        ResolvableType resolvableType = ResolvableType.forClass(listenerClass);
         ResolvableType[] interfaces = resolvableType.getInterfaces();
         for (ResolvableType interfaceType : interfaces) {
             if(interfaceType.toClass() == EventListener.class){

@@ -11,7 +11,7 @@ import org.springframework.core.annotation.Order;
 public class RemoteAutoConfiguration {
 
     @Bean
-    public RemoteServiceScannerConfigurer RemoteServiceScannerConfigurer(){
+    public static RemoteServiceScannerConfigurer remoteServiceScannerConfigurer(){
         return new RemoteServiceScannerConfigurer();
     }
 }

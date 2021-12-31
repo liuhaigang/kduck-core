@@ -14,6 +14,7 @@ import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.core.TopicExchange;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
+import org.springframework.aop.support.AopUtils;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -89,7 +90,12 @@ public class EventConfiguration {
                 SimpleMessageListenerContainer messageListenerContainer = new SimpleMessageListenerContainer(connectionFactory);
                 messageListenerContainer.setMessageListener(eventMessageListener);
 
-                String md5 = DigestUtils.md5DigestAsHex(eventListener.getClass().getName().getBytes());
+                Class listenerClass = eventListener.getClass();
+                if(AopUtils.isAopProxy(eventListener)){
+                    listenerClass = AopUtils.getTargetClass(eventListener);
+                }
+
+                String md5 = DigestUtils.md5DigestAsHex(listenerClass.getName().getBytes());
                 String key = eventListener.eventCode() + "." + eventListener.eventType();
                 String queueName = "kduckQueue." + key + "." + md5;
 
