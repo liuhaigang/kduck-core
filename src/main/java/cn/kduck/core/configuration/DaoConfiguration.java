@@ -1,12 +1,12 @@
 package cn.kduck.core.configuration;
 
+import cn.kduck.core.KduckProperties;
 import cn.kduck.core.dao.DefaultDeleteArchiveHandler;
 import cn.kduck.core.dao.DeleteArchiveHandler;
 import cn.kduck.core.dao.JdbcEntityDao;
 import cn.kduck.core.dao.datasource.DataSourceMatcher;
 import cn.kduck.core.dao.datasource.DataSourceSwitch;
 import cn.kduck.core.dao.datasource.DynamicDataSource;
-import cn.kduck.core.dao.datasource.DynamicDataSourceProperties;
 import cn.kduck.core.dao.datasource.condition.RequestMethodMatcher;
 import cn.kduck.core.dao.definition.BeanDefDepository;
 import cn.kduck.core.dao.definition.BeanDefSource;
@@ -109,7 +109,7 @@ public class DaoConfiguration {
     @Bean
     @Conditional(SpringDataSourceUnavailableCondition.class)
     @Primary
-    public DataSource dataSource(DynamicDataSourceProperties properties) {
+    public DataSource dataSource(KduckProperties properties) {
 
         DynamicDataSource dataSource = new DynamicDataSource();
         Map<Object,Object> dataSourceMap = new HashMap<>();

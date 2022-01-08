@@ -1,5 +1,7 @@
 package cn.kduck.core.web.resource;
 
+import cn.kduck.core.KduckProperties;
+import cn.kduck.core.KduckProperties.ResourceProperties;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import cn.kduck.core.utils.PathUtils;
@@ -14,6 +16,7 @@ import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.BeanFactoryAware;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.AutoConfigurationPackages;
 import org.springframework.core.annotation.AnnotationUtils;
@@ -47,17 +50,26 @@ public class ModelResourceLoader implements InitializingBean, BeanFactoryAware {
 
     private ObjectMapper om = new ObjectMapper();
 
-    @Value("${kduck.resource.basePackage:}")
-    private String[] packagesToScan;
+//    @Value("${kduck.resource.basePackage:}")
+//    private String[] packagesToScan;
 
     private final List<ModelResourceProcessor> resourceProcessorList;
     private BeanFactory beanFactory;
+
+    @Autowired
+    private KduckProperties kduckProperties;
 
     public ModelResourceLoader(ObjectProvider<ModelResourceProcessor> resourceProcessorProvider){
         this.resourceProcessorList = Collections.unmodifiableList(new ArrayList<>(resourceProcessorProvider.stream().collect(Collectors.toList())));;
     }
 
     private void load(){
+        ResourceProperties resourceProperties = kduckProperties.getResource();
+        String[] packagesToScan = null;
+        if(packagesToScan != null){
+            packagesToScan = resourceProperties.getBasePackage();
+        }
+
         if(packagesToScan == null || packagesToScan.length == 0){
             List<String> packages = AutoConfigurationPackages.get(this.beanFactory);
             packagesToScan = packages.toArray(new String[0]);

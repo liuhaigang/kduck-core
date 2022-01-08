@@ -1,5 +1,7 @@
 package cn.kduck.core.dao.definition.impl;
 
+import cn.kduck.core.KduckProperties;
+import cn.kduck.core.KduckProperties.ScanTablesProperties;
 import cn.kduck.core.dao.datasource.DataSourceSwitch;
 import cn.kduck.core.dao.datasource.DynamicDataSource;
 import cn.kduck.core.dao.definition.BeanEntityDef;
@@ -41,11 +43,11 @@ public class JdbcBeanDefSource implements BeanDefSource {
     @Autowired
     private TableAliasGenerator tableAliasGenerator;
 
-    @Value("${kduck.definition.tables.exclude:}")
-    private String[] excludeTables;
-
-    @Value("${kduck.definition.tables.include:}")
-    private String[] includeTables;
+//    @Value("${kduck.definition.tables.exclude:}")
+//    private String[] excludeTables;
+//
+//    @Value("${kduck.definition.tables.include:}")
+//    private String[] includeTables;
 
     @Autowired(required = false)
     private FieldDefCorrector fieldDefCorrector;
@@ -53,12 +55,18 @@ public class JdbcBeanDefSource implements BeanDefSource {
     @Autowired(required = false)
     private EntityDefCorrector entityDefCorrector;
 
+    @Autowired
+    private KduckProperties kduckProperties;
+
     @Override
     public String getNamespace() {
         return getClass().getName();
     }
 
     private boolean analysisTable(String tableName){
+        ScanTablesProperties tables = kduckProperties.getDefinition().getTables();
+        String[] includeTables = tables.getInclude();
+        String[] excludeTables = tables.getExclude();
         if(includeTables.length == 0 && excludeTables.length == 0 ) return true;
 
         //Kduck表默认都需要扫描

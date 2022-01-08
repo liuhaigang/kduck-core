@@ -1,17 +1,18 @@
 package cn.kduck.core.dao;
 
+import cn.kduck.core.KduckProperties;
+import cn.kduck.core.KduckProperties.ShowSqlMode;
+import cn.kduck.core.KduckProperties.ShowSqlProperties;
 import cn.kduck.core.dao.datasource.DataSourceSwitch;
 import cn.kduck.core.dao.definition.BeanDefDepository;
 import cn.kduck.core.dao.definition.BeanEntityDef;
 import cn.kduck.core.dao.definition.BeanFieldDef;
 import cn.kduck.core.dao.definition.FieldAliasGenerator;
 import cn.kduck.core.dao.definition.TableAliasGenerator;
-import cn.kduck.core.dao.sqlbuilder.SignatureInfo;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import cn.kduck.core.dao.dialect.DatabaseDialect;
 import cn.kduck.core.dao.query.QuerySupport;
 import cn.kduck.core.dao.query.formater.ValueFormatter;
+import cn.kduck.core.dao.sqlbuilder.SignatureInfo;
 import cn.kduck.core.dao.utils.TypeUtils;
 import cn.kduck.core.utils.BeanDefUtils;
 import cn.kduck.core.utils.SpringBeanUtils;
@@ -19,27 +20,48 @@ import cn.kduck.core.web.interceptor.OperateIdentificationInterceptor.OidHolder;
 import cn.kduck.core.web.interceptor.OperateIdentificationInterceptor.OperateIdentification;
 import cn.kduck.core.web.interceptor.operateinfo.OperateObject;
 import cn.kduck.core.web.interceptor.operateinfo.OperateObject.OperateType;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ansi.AnsiColor;
 import org.springframework.boot.ansi.AnsiElement;
 import org.springframework.boot.ansi.AnsiOutput;
 import org.springframework.boot.ansi.AnsiStyle;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.jdbc.core.*;
+import org.springframework.jdbc.core.ArgumentPreparedStatementSetter;
+import org.springframework.jdbc.core.BatchPreparedStatementSetter;
+import org.springframework.jdbc.core.ColumnMapRowMapper;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.PreparedStatementCreator;
+import org.springframework.jdbc.core.RowMapperResultSetExtractor;
+import org.springframework.jdbc.core.SqlParameterValue;
+import org.springframework.jdbc.core.SqlTypeValue;
+import org.springframework.jdbc.core.StatementCreatorUtils;
 import org.springframework.jdbc.support.JdbcUtils;
 import org.springframework.jdbc.support.lob.DefaultLobHandler;
-import org.springframework.jdbc.support.lob.LobCreator;
 import org.springframework.jdbc.support.lob.LobHandler;
 import org.springframework.util.Assert;
 
-import java.sql.*;
-import java.util.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.sql.Types;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.StringJoiner;
 
 /**
  * @author LiuHG
  */
-public class JdbcEntityDao {
+public class JdbcEntityDao implements InitializingBean {
 
     private ObjectMapper jsonMapper = new ObjectMapper();
 
@@ -67,12 +89,12 @@ public class JdbcEntityDao {
     @Lazy
     private DeleteArchiveHandler deleteArchiveHandler;
 
-    @Value("${kduck.showSql.enabled:false}")
+    @Autowired
+    private KduckProperties kduckProperties;
+
     private boolean showSql;
 
-    @Value("${kduck.showSql.mode:SQL}")
     private ShowSqlMode showSqlMode;
-
 
     private void addOperateObject(OperateType type, BeanEntityDef entityDef, Map<String, Object> valueMap){
         OperateIdentification operateIdentification = OidHolder.getOperateIdentification();
@@ -180,6 +202,15 @@ public class JdbcEntityDao {
             for (Map<String, Object> map : list) {
                 addOperateObject(OperateType.DELETE,entityDef,map);
             }
+        }
+    }
+
+    @Override
+    public void afterPropertiesSet() throws Exception {
+        ShowSqlProperties showSql = kduckProperties.getShowSql();
+        if(showSql != null){
+            this.showSql = showSql.isEnabled();
+            this.showSqlMode = showSql.getMode();
         }
     }
 
@@ -653,13 +684,6 @@ public class JdbcEntityDao {
             return paramItem;
         }
     }
-
-    private enum ShowSqlMode {
-        SQL,
-        TIME_SQL,
-        JUST_SLOW_SQL;
-    }
-
 
     private BeanDefDepository getBeanDefDepository(){
         if(beanDefDepository == null){
