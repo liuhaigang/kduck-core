@@ -30,14 +30,15 @@ public class RemoteController {
         Assert.notNull(remoteMethod.getMethodName(),"远程调用方法名不能为null");
 
         Object serviceObject = RemoteServiceDepository.getServiceObject(serviceName);
-        Method method = serviceMethodCache.get(serviceName + "#" + remoteMethod.getMethodName());
+        String serviceClassName = serviceObject.getClass().getName();
+        Method method = serviceMethodCache.get(serviceClassName + "#" + remoteMethod.getMethodName());
         if(method == null){
             Method[] methods = serviceObject.getClass().getMethods();
             for (Method method1 : methods) {
                 String methodName = methodName(method1);
                 if(methodName.equals(remoteMethod.getMethodName())){
                     method = method1;
-                    serviceMethodCache.put(serviceName + "#" + remoteMethod.getMethodName(),method1);
+                    serviceMethodCache.put(serviceClassName + "#" + remoteMethod.getMethodName(),method1);
                     break;
                 }
             }
