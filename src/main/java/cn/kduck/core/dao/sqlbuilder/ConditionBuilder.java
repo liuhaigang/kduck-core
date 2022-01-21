@@ -219,7 +219,7 @@ public abstract class ConditionBuilder {
             }
             //##########################################################
             String attrName = condition.getAttrName();
-            if(attrName != null){//因为is null 和is not null的条件关系，所以可能attrName为null
+            if(attrName != null && !attrName.startsWith("${") && !attrName.endsWith("}")){//因为is null 和is not null的条件关系，所以可能attrName为null
                 attrNameList.add(attrName);
             }
         }
