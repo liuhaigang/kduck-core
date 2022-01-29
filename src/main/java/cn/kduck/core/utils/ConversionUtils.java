@@ -30,6 +30,8 @@ public final class ConversionUtils {
                 return new Date(source);
             }
         });
+
+        genericConversionService.addConverter(new Integer2DateConverter());
         genericConversionService.addConverter(new DateConverter());
         genericConversionService.addConverter(new Boolean2IntegerConverter());
         genericConversionService.addConverter(new Integer2BooleanConverter());
@@ -54,6 +56,13 @@ public final class ConversionUtils {
         public Boolean convert(Integer source) {
             if(source == null) return false;
             return source.intValue() > 0 ? true : false;
+        }
+    }
+
+    public static class Integer2DateConverter implements Converter<Integer, Date>{
+        @Override
+        public Date convert(Integer source) {
+            return new Date(source.longValue());
         }
     }
 

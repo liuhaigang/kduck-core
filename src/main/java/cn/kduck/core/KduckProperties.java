@@ -62,7 +62,7 @@ public class KduckProperties {
     }
     //子配置对象
 
-    public class WebsocketProperties{
+    public static class WebsocketProperties{
         private boolean enabled;
 
         public boolean isEnabled() {
@@ -74,7 +74,7 @@ public class KduckProperties {
         }
     }
 
-    public class EntityDefinitionProperties{
+    public static class EntityDefinitionProperties{
         private ScanTablesProperties tables;
 
         public ScanTablesProperties getTables() {
@@ -89,7 +89,7 @@ public class KduckProperties {
         }
     }
 
-    public class ScanTablesProperties{
+    public static class ScanTablesProperties{
         private String[] exclude;
         private String[] include;
 
@@ -110,7 +110,7 @@ public class KduckProperties {
         }
     }
 
-    public class ResourceProperties{
+    public static class ResourceProperties{
         private boolean enabled;
         private String[] basePackage;
 
@@ -131,7 +131,7 @@ public class KduckProperties {
         }
     }
 
-    public class ShowSqlProperties{
+    public static class ShowSqlProperties{
 
         private boolean enabled;
         private ShowSqlMode mode = ShowSqlMode.SQL;
