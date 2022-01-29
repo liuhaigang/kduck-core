@@ -11,7 +11,7 @@ import java.util.Map;
 public interface QueryCreator {
 
     default String queryCode(){
-        return getClass().getSimpleName();
+        return getClass().getName();
     }
 
     /**
