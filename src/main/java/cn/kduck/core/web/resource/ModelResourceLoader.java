@@ -2,13 +2,11 @@ package cn.kduck.core.web.resource;
 
 import cn.kduck.core.KduckProperties;
 import cn.kduck.core.KduckProperties.ResourceProperties;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import cn.kduck.core.utils.PathUtils;
 import cn.kduck.core.web.annotation.ModelOperate;
 import cn.kduck.core.web.annotation.ModelResource;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.BeansException;
@@ -17,7 +15,6 @@ import org.springframework.beans.factory.BeanFactoryAware;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.AutoConfigurationPackages;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.core.io.Resource;
@@ -27,10 +24,7 @@ import org.springframework.core.type.ClassMetadata;
 import org.springframework.core.type.classreading.CachingMetadataReaderFactory;
 import org.springframework.core.type.classreading.MetadataReader;
 import org.springframework.core.type.classreading.MetadataReaderFactory;
-import org.springframework.util.ClassUtils;
-import org.springframework.util.DigestUtils;
-import org.springframework.util.ReflectionUtils;
-import org.springframework.util.StringUtils;
+import org.springframework.util.*;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
@@ -172,22 +166,14 @@ public class ModelResourceLoader implements InitializingBean, BeanFactoryAware {
 
             ResourceValueMap resource = new ResourceValueMap();
 
+            String resCode = ObjectUtils.isEmpty(resourceAnno.code()) ? clazz.getName() : resourceAnno.code();
+
             if(StringUtils.hasText(resourceAnno.value())){
                 resource.setResourceName(resourceAnno.value());
             } else {
-                //如果swagger注解存在，则尝试从swagger注解中获取模块名称
-                Api swaggerApi = AnnotationUtils.findAnnotation(clazz, Api.class);
-                if(swaggerApi != null){
-                    String moduleName = StringUtils.hasText(swaggerApi.tags()[0]) ? swaggerApi.tags()[0] : swaggerApi.value();
-                    resource.setResourceName(moduleName);
-                }
-                if(!StringUtils.hasText(resource.getResourceName())){
-                    throw new IllegalArgumentException("标记@ModelResource注解必须指定模块名称：" + clazz.getName());
-                }
+                resource.setResourceName(resCode);
             }
 
-
-            String resCode = StringUtils.isEmpty(resourceAnno.code()) ? clazz.getName() : resourceAnno.code();
             resource.setResourceCode(resCode);
 
             List<OperateValueMap> resourceOperates = null;
@@ -308,19 +294,15 @@ public class ModelResourceLoader implements InitializingBean, BeanFactoryAware {
     private OperateValueMap getOperateValueMap(String operatePath,ModelOperate optAnno,Method method){
         OperateValueMap resOpt = new OperateValueMap();
 
+        String optCode = ObjectUtils.isEmpty(optAnno.code()) ? method.getName() : optAnno.code();
+
         if(StringUtils.hasText(optAnno.name())){
             resOpt.setOperateName(optAnno.name());
         }else{
-            ApiOperation swaggerOperation = AnnotationUtils.findAnnotation(method, ApiOperation.class);
-            if(swaggerOperation != null && StringUtils.hasText(swaggerOperation.value())){
-                resOpt.setOperateName(swaggerOperation.value());
-            }
-            if(!StringUtils.hasText(resOpt.getOperateName())){
-                throw new IllegalArgumentException("标记@ModelOperate注解必须指定操作名称：class=" + method.getDeclaringClass().getName() + ",method=" + method.getName());
-            }
+            resOpt.setOperateName(optCode);
         }
 
-        String optCode = StringUtils.isEmpty(optAnno.code()) ? method.getName() : optAnno.code();
+
         resOpt.setOperateCode(optCode);
         resOpt.setOperatePath(operatePath);
         resOpt.setGroupCode(optAnno.group());

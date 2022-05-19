@@ -6,8 +6,7 @@ import cn.kduck.core.web.interceptor.OperateIdentificationInterceptor.OidHolder;
 import cn.kduck.core.web.interceptor.OperateIdentificationInterceptor.OperateIdentification;
 import cn.kduck.core.web.interceptor.operateinfo.OperateInfo;
 import cn.kduck.core.web.interceptor.operateinfo.OperateInfoHandler;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
+import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerInterceptor;
@@ -42,26 +41,19 @@ public class OperateInterceptor implements HandlerInterceptor {
             if (modelResource != null && modelOperate != null){
                 //得到模块名称
                 String moduleName = modelResource.value();
-                if(StringUtils.isEmpty(moduleName)) {
-                    Api swaggerApi = typeClass.getAnnotation(Api.class);
-                    if(swaggerApi != null){
-                        moduleName = StringUtils.hasText(swaggerApi.tags()[0]) ? swaggerApi.tags()[0] : swaggerApi.value();
-                    }
+                if(ObjectUtils.isEmpty(moduleName)) {
+                    moduleName = modelResource.code();
                 }
-                if(StringUtils.isEmpty(moduleName)) {
+                if(ObjectUtils.isEmpty(moduleName)) {
                     moduleName = typeClass.getSimpleName();
                 }
 
                 //得到操作名称
                 String optName = modelOperate.name();
-                //如果ModelOperate注解没有提供name，则尝试从ApiOperation注解中获取，如果没有ApiOperation，则用方法名代替
-                if(StringUtils.isEmpty(optName)) {
-                    ApiOperation apiOperation = handlerMethod.getMethodAnnotation(ApiOperation.class);
-                    if(apiOperation != null){
-                        optName = apiOperation.value();
-                    }
+                if(ObjectUtils.isEmpty(optName)) {
+                    optName = modelOperate.code();
                 }
-                if(StringUtils.isEmpty(optName)) {
+                if(ObjectUtils.isEmpty(optName)) {
                     optName = method.getName();
                 }
 
