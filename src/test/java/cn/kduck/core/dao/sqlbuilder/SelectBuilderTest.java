@@ -61,7 +61,7 @@ public class SelectBuilderTest {
         orgUserEntityDef.setFkBeanEntityDef(new BeanEntityDef[]{userEntityDef,orgEntityDef});
 
         //设置了一个全局条件
-        new QueryConditionContext(Arrays.asList(new UserConditionDefiner()));
+//        new QueryConditionContext(Arrays.asList(new UserConditionDefiner()));
     }
 
     private enum GenderType {

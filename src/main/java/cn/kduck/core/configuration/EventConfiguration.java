@@ -102,6 +102,8 @@ public class EventConfiguration {
                 Queue queue = new Queue(queueName);
                 amqpAdmin.declareQueue(queue);
                 amqpAdmin.declareBinding(new Binding(queueName, DestinationType.QUEUE,KDUCK_EVENT_EXCHANGE_NAME,key + ".#",null));
+                messageListenerContainer.setMissingQueuesFatal(false);
+//                messageListenerContainer.setRecoveryInterval();
 
                 messageListenerContainer.addQueues(queue);
                 messageListenerContainer.start();
