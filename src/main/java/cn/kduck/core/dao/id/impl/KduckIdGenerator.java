@@ -1,0 +1,131 @@
+package cn.kduck.core.dao.id.impl;
+
+import java.io.Serializable;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.util.Arrays;
+import java.util.concurrent.TimeUnit;
+
+public class KduckIdGenerator {
+
+    private int timeBits = 31;
+    private int ipRegionBits = 3;
+    private int ipSegmentBits = 8;
+    private int seqBits = 13;
+
+    private long maxDeltaSeconds = -1L ^ (-1L << timeBits);
+    private long maxSequence = -1L ^ (-1L << seqBits);
+
+    private long epochSeconds = TimeUnit.MILLISECONDS.toSeconds(1287590400000L);
+
+    private long secondsShift = ipRegionBits + ipSegmentBits + ipSegmentBits + seqBits;
+
+    private long ipRegionShift = ipSegmentBits + ipSegmentBits + seqBits;
+
+    private long ipShift = ipSegmentBits + seqBits;
+
+    private long sequence = 0L;
+    private long lastSecond = -1L;
+
+    private final int[] ipAddress = new int[4];
+
+    private final int reginValue;
+
+    public KduckIdGenerator(){
+        this(null);
+    }
+
+    public KduckIdGenerator(String ip){
+        this(ip,new String[0]);
+    }
+
+    public KduckIdGenerator(String ip, String[] regions){
+        this(ip,ipAddress->{
+            if(regions == null || regions.length == 0){
+                return 0;
+            }
+
+            for (int i = 0; i < regions.length; i++) {
+                if(ipAddress.startsWith(regions[i])){
+                    return i;
+                }
+            }
+            throw new RuntimeException("当前IP未匹配到任何区域：ip=" + ipAddress + ",regions=" + Arrays.toString(regions));
+        });
+
+    }
+
+    public KduckIdGenerator(String ip, ReginAllocator reginAllocator){
+
+        this.reginValue = reginAllocator.allot(ip);
+
+        if(ip == null || ip.length() == 0){
+            InetAddress ipv4Address;
+            try {
+                ipv4Address = InetAddress.getLocalHost();
+            } catch (UnknownHostException e) {
+                throw new RuntimeException("初始化生成器错误，我发获取指定主机的IP地址",e);
+            }
+            byte[] address = ipv4Address.getAddress();
+
+            for(int i = 0 ; i < ipAddress.length ; i++){
+                ipAddress[i] = address[i] & 0xff;
+            }
+        }else{
+            String[] ipv4Address = ip.split("[.]");
+            if(ipv4Address.length != 4){
+                throw new RuntimeException("IP地址不合法，请提供一个正确的IPv4的IP地址："+ipAddress);
+            }
+            for(int i = 0 ; i < ipAddress.length ; i++){
+                ipAddress[i] = Integer.parseInt(ipv4Address[i]);
+            }
+        }
+
+    }
+
+
+    public synchronized Serializable nextId() {
+        long currentSecond = getCurrentSecond();
+
+        if (currentSecond < lastSecond) {
+            long refusedSeconds = lastSecond - currentSecond;
+            throw new RuntimeException("Clock moved backwards. Refusing for " + refusedSeconds + " seconds");
+        }
+
+        if (currentSecond == lastSecond) {
+            sequence = (sequence + 1) & maxSequence;
+            if (sequence == 0) {
+                currentSecond = getNextSecond(lastSecond);
+            }
+        } else {
+            sequence = 0L;
+        }
+
+        lastSecond = currentSecond;
+
+        return ((currentSecond - epochSeconds) << secondsShift) | (reginValue << ipRegionShift) | (ipAddress[2] << ipShift) | (ipAddress[3] << seqBits) | sequence;
+    }
+
+    private long getNextSecond(long lastSecond) {
+        long second = getCurrentSecond();
+        while (second <= lastSecond) {
+            second = getCurrentSecond();
+        }
+
+        return second;
+    }
+
+    protected long getCurrentSecond() {
+        long currentSecond = TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis());
+        if (currentSecond - epochSeconds > maxDeltaSeconds) {
+            throw new RuntimeException("Timestamp bits is exhausted. Refusing UID generate. Now: " + currentSecond);
+        }
+
+        return currentSecond;
+    }
+
+    public interface ReginAllocator{
+        int allot(String ipAddress);
+    }
+
+}
