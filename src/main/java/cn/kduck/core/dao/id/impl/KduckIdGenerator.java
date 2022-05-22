@@ -1,12 +1,16 @@
 package cn.kduck.core.dao.id.impl;
 
+import cn.kduck.core.dao.id.IdGenerator;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.stereotype.Component;
+
 import java.io.Serializable;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
-public class KduckIdGenerator {
+public class KduckIdGenerator implements IdGenerator {
 
     private int timeBits = 31;
     private int ipRegionBits = 3;
@@ -83,7 +87,7 @@ public class KduckIdGenerator {
 
     }
 
-
+    @Override
     public synchronized Serializable nextId() {
         long currentSecond = getCurrentSecond();
 
@@ -126,6 +130,29 @@ public class KduckIdGenerator {
 
     public interface ReginAllocator{
         int allot(String ipAddress);
+    }
+
+    @Component
+    @ConfigurationProperties("kduck.id.kduck-id")
+    public static class KduckSnowFlakeProperties {
+        private String serverIp;
+        private String[] regions;
+
+        public String getServerIp() {
+            return serverIp;
+        }
+
+        public void setServerIp(String serverIp) {
+            this.serverIp = serverIp;
+        }
+
+        public String[] getRegions() {
+            return regions;
+        }
+
+        public void setRegions(String[] regions) {
+            this.regions = regions;
+        }
     }
 
 }

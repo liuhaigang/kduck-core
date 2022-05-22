@@ -8,17 +8,11 @@ import cn.kduck.core.dao.datasource.DataSourceMatcher;
 import cn.kduck.core.dao.datasource.DataSourceSwitch;
 import cn.kduck.core.dao.datasource.DynamicDataSource;
 import cn.kduck.core.dao.datasource.condition.RequestMethodMatcher;
-import cn.kduck.core.dao.definition.BeanDefDepository;
-import cn.kduck.core.dao.definition.BeanDefSource;
-import cn.kduck.core.dao.definition.DefaultFieldAliasGenerator;
-import cn.kduck.core.dao.definition.DefaultTableAliasGenerator;
-import cn.kduck.core.dao.definition.FieldAliasGenerator;
-import cn.kduck.core.dao.definition.MemoryBeanDefDepository;
-import cn.kduck.core.dao.definition.TableAliasGenerator;
+import cn.kduck.core.dao.definition.*;
 import cn.kduck.core.dao.definition.impl.JdbcBeanDefSource;
 import cn.kduck.core.dao.id.IdGenerator;
-import cn.kduck.core.dao.id.impl.SnowFlakeGenerator;
-import cn.kduck.core.dao.id.impl.SnowFlakeGenerator.SnowFlakeProperties;
+import cn.kduck.core.dao.id.impl.KduckIdGenerator;
+import cn.kduck.core.dao.id.impl.KduckIdGenerator.KduckSnowFlakeProperties;
 import cn.kduck.core.utils.StringUtils;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
@@ -26,24 +20,13 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.boot.autoconfigure.condition.ConditionOutcome;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.SpringBootCondition;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.ConditionContext;
-import org.springframework.context.annotation.Conditional;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Lazy;
-import org.springframework.context.annotation.Primary;
+import org.springframework.context.annotation.*;
 import org.springframework.core.env.Environment;
 import org.springframework.core.type.AnnotatedTypeMetadata;
 
 import javax.sql.DataSource;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Properties;
-import java.util.Set;
 
 /**
  * LiuHG
@@ -51,10 +34,16 @@ import java.util.Set;
 @Configuration
 public class DaoConfiguration {
 
+//    @Bean
+//    @ConditionalOnMissingBean(IdGenerator.class)
+//    public IdGenerator idGenerator(SnowFlakeProperties snowFlakeProperties){
+//       return new SnowFlakeGenerator(snowFlakeProperties.getWorkerId(),snowFlakeProperties.getDataCenterId(),snowFlakeProperties.getSequence());
+//    }
+
     @Bean
     @ConditionalOnMissingBean(IdGenerator.class)
-    public IdGenerator idGenerator(SnowFlakeProperties snowFlakeProperties){
-       return new SnowFlakeGenerator(snowFlakeProperties.getWorkerId(),snowFlakeProperties.getDataCenterId(),snowFlakeProperties.getSequence());
+    public IdGenerator idGenerator(KduckSnowFlakeProperties kduckSnowFlakeProperties){
+        return new KduckIdGenerator(kduckSnowFlakeProperties.getServerIp(),kduckSnowFlakeProperties.getRegions());
     }
 
     @Bean
