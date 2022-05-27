@@ -1,6 +1,8 @@
 package cn.kduck.core.dao.id.impl;
 
 import cn.kduck.core.dao.id.IdGenerator;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
@@ -11,6 +13,8 @@ import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
 public class KduckIdGenerator implements IdGenerator {
+
+    private final Log logger = LogFactory.getLog(getClass());
 
     private int timeBits = 31;
     private int ipRegionBits = 3;
@@ -83,6 +87,10 @@ public class KduckIdGenerator implements IdGenerator {
             for(int i = 0 ; i < ipAddress.length ; i++){
                 ipAddress[i] = Integer.parseInt(ipv4Address[i]);
             }
+        }
+        if(logger.isInfoEnabled()){
+            String ipStr = ipAddress[0] + "." + ipAddress[1] + "." + ipAddress[2] + "." + ipAddress[3];
+            logger.info("基于IP的主键生成器，提取的IP地址为：" + ipStr);
         }
 
     }
