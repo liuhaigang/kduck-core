@@ -8,7 +8,7 @@
 
 1.  JDK 8
 
-2.  Spring-Boot 2.1.5
+2.  Spring-Boot 2.6.6
 
 # 框架组件
 
