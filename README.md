@@ -43,7 +43,7 @@
    <dependency>
     <groupId>cn.kduck</groupId>
     <artifactId>kduck-core</artifactId>
-    <version>1.1.0</version>
+    <version>1.1.4</version>
    </dependency>
 ```
 
