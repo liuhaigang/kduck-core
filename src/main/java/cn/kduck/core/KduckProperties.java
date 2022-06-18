@@ -156,6 +156,7 @@ public class KduckProperties {
     public enum ShowSqlMode {
         SQL,
         TIME_SQL,
-        JUST_SLOW_SQL;
+        JUST_SLOW_SQL,
+        SQL_ON_ERROR;
     }
 }

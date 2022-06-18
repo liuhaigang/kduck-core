@@ -136,37 +136,46 @@ public class JdbcEntityDao implements InitializingBean {
             printSql(-1,sqlObject.getSql(), sqlObject.getParamValueList(),null);
         }
 
+        int[] returnResult;
+        try{
 //        LobCreator lobCreator = lobHandler.getLobCreator();
-        KduckPreparedStatementCreator psc = new KduckPreparedStatementCreator(sqlObject,keyHolder != null);
+            KduckPreparedStatementCreator psc = new KduckPreparedStatementCreator(sqlObject,keyHolder != null);
 //        KeyHolder keyHolder = new GeneratedKeyHolder();
-        int[] returnResult = jdbcTemplate.execute(psc,ps ->{
-            int[] rows;
-            if(psc.isBatch()){
-                rows = ps.executeBatch();
-            }else{
-                rows = new int[]{ps.executeUpdate()};
-            }
+            returnResult = jdbcTemplate.execute(psc,ps ->{
+                int[] rows;
+                if(psc.isBatch()){
+                    rows = ps.executeBatch();
+                }else{
+                    rows = new int[]{ps.executeUpdate()};
+                }
 
-            if(keyHolder != null){
+                if(keyHolder != null){
 //                List<Map<String, Object>> generatedKeys = keyHolder.getKeyList();
 //                generatedKeys.clear();
-                keyHolder.clear();
-                ResultSet keys = ps.getGeneratedKeys();
-                if (keys != null) {
-                    try {
-                        RowMapperResultSetExtractor<Map<String, Object>> rse =
-                                new RowMapperResultSetExtractor<>(new ColumnMapRowMapper(), 1);
+                    keyHolder.clear();
+                    ResultSet keys = ps.getGeneratedKeys();
+                    if (keys != null) {
+                        try {
+                            RowMapperResultSetExtractor<Map<String, Object>> rse =
+                                    new RowMapperResultSetExtractor<>(new ColumnMapRowMapper(), 1);
 //                        generatedKeys.addAll(rse.extractData(keys));
-                        List<Map<String, Object>> keyMapList = rse.extractData(keys);
-                        keyMapList.stream().forEach(keyMap ->keyHolder.addAll(keyMap.values()));
-                    }
-                    finally {
-                        JdbcUtils.closeResultSet(keys);
+                            List<Map<String, Object>> keyMapList = rse.extractData(keys);
+                            keyMapList.stream().forEach(keyMap ->keyHolder.addAll(keyMap.values()));
+                        }
+                        finally {
+                            JdbcUtils.closeResultSet(keys);
+                        }
                     }
                 }
+                return rows;
+            });
+        }catch (Exception e){
+            if (showSql && showSqlMode != ShowSqlMode.SQL_ON_ERROR) {
+                printSql(-1,sqlObject.getSql(), sqlObject.getParamValueList(),null);
             }
-            return rows;
-        });
+            throw e;
+        }
+
 
         //如果输出sql模式为显示执行时间，则仅能在操作后输出sql
         if (showSql && showSqlMode != ShowSqlMode.SQL) {
@@ -376,26 +385,35 @@ public class JdbcEntityDao implements InitializingBean {
             printSql(-1,sql,paramList,signInfo);
         }
 
-        List<Map<String, Object>> queryResult = jdbcTemplate.query(sql, (rs) -> {
-            List<BeanFieldDef> fieldDefList = sqlObject.getFieldDefList();
-            List<Map<String, Object>> recordMapList = new ArrayList<>();
-            while (rs.next()) {
-                Map<String, Object> recordMap = resultSet2Map(rs, fieldDefList);
-                if (valueFormaters != null && !valueFormaters.isEmpty()) {
-                    Iterator<String> keys = valueFormaters.keySet().iterator();
-                    while (keys.hasNext()) {
-                        String attrName = keys.next();
-                        if (recordMap.containsKey(attrName)) {
-                            ValueFormatter vf = valueFormaters.get(attrName);
-                            Object v = recordMap.get(attrName);
-                            recordMap.put(attrName, vf.format(v, Collections.unmodifiableMap(recordMap)));
+        List<Map<String, Object>> queryResult;
+        try{
+            queryResult = jdbcTemplate.query(sql, (rs) -> {
+                List<BeanFieldDef> fieldDefList = sqlObject.getFieldDefList();
+                List<Map<String, Object>> recordMapList = new ArrayList<>();
+                while (rs.next()) {
+                    Map<String, Object> recordMap = resultSet2Map(rs, fieldDefList);
+                    if (valueFormaters != null && !valueFormaters.isEmpty()) {
+                        Iterator<String> keys = valueFormaters.keySet().iterator();
+                        while (keys.hasNext()) {
+                            String attrName = keys.next();
+                            if (recordMap.containsKey(attrName)) {
+                                ValueFormatter vf = valueFormaters.get(attrName);
+                                Object v = recordMap.get(attrName);
+                                recordMap.put(attrName, vf.format(v, Collections.unmodifiableMap(recordMap)));
+                            }
                         }
                     }
+                    recordMapList.add(recordMap);
                 }
-                recordMapList.add(recordMap);
+                return recordMapList;
+            }, paramList.toArray());
+        }catch (Exception e){
+            if (showSql && showSqlMode != ShowSqlMode.SQL_ON_ERROR) {
+                printSql(-1,sql, paramList,signInfo);
             }
-            return recordMapList;
-        }, paramList.toArray());
+            throw e;
+        }
+
 
         if (showSql && showSqlMode != ShowSqlMode.SQL) {
             long endTime = System.currentTimeMillis();
@@ -526,12 +544,21 @@ public class JdbcEntityDao implements InitializingBean {
             printSql(-1,countSql,paramList,signInfo);
         }
 
-        Long countResult = jdbcTemplate.query(countSql, (rs) -> {
-            while (rs.next()) {
-                return rs.getLong(1);
+        Long countResult;
+        try{
+            countResult = jdbcTemplate.query(countSql, (rs) -> {
+                while (rs.next()) {
+                    return rs.getLong(1);
+                }
+                return 0L;
+            }, paramList.toArray());
+        }catch (Exception e){
+            if (showSql && showSqlMode != ShowSqlMode.SQL_ON_ERROR) {
+                printSql(-1,sql, paramList,signInfo);
             }
-            return 0L;
-        }, paramList.toArray());
+            throw e;
+        }
+
 
         if (showSql && showSqlMode != ShowSqlMode.SQL) {
             long endTime = System.currentTimeMillis();
@@ -580,13 +607,21 @@ public class JdbcEntityDao implements InitializingBean {
             printSql(-1,"违规范",sql,valueList,null);
         }
 
-        Integer executeResult = jdbcTemplate.execute(sql, (PreparedStatement statement) -> {
-            for (int i = 0; i < valueList.size(); i++) {
-                Object v = valueList.get(i);
-                statement.setObject(i + 1, v, TypeUtils.jdbcType(v.getClass()));
+        Integer executeResult;
+        try{
+            executeResult = jdbcTemplate.execute(sql, (PreparedStatement statement) -> {
+                for (int i = 0; i < valueList.size(); i++) {
+                    Object v = valueList.get(i);
+                    statement.setObject(i + 1, v, TypeUtils.jdbcType(v.getClass()));
+                }
+                return statement.executeUpdate();
+            });
+        }catch (Exception e){
+            if (showSql && showSqlMode != ShowSqlMode.SQL_ON_ERROR) {
+                printSql(-1,sql, valueList,null);
             }
-            return statement.executeUpdate();
-        });
+            throw e;
+        }
 
         if (showSql && showSqlMode != ShowSqlMode.SQL) {
             long endTime = System.currentTimeMillis();

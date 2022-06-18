@@ -44,7 +44,7 @@ public class ModuleMessageSource extends ReloadableResourceBundleMessageSource i
                 }
 
             } catch (Exception e) {
-                e.printStackTrace();
+                throw new RuntimeException("加载国际化文件时发生错误：" + url, e);
             }
         }
 

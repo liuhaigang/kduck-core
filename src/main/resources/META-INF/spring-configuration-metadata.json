@@ -170,6 +170,9 @@
         },{
           "value": "JUST_SLOW_SQL",
           "description": "仅显示慢SQL及参数信息（超过500ms），此种模式会在SQL执行后输出。"
+        },{
+          "value": "SQL_ON_ERROR",
+          "description": "仅当执行数据库操作异常的时候输出SQL。"
         }
       ]
     }
