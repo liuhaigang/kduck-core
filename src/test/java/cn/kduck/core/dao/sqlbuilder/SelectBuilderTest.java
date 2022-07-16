@@ -129,6 +129,12 @@ public class SelectBuilderTest {
         sqlBuiler.from("u",userEntityDef).innerJoinOn("u2",userEntityDef,"userId").where().and("u.USER_NAME", ConditionType.CONTAINS,"userName");
         printSql("单表查询-5",sqlBuiler);
 
+        sqlBuiler = new SelectBuilder(userEntityDef,paramMap);
+        sqlBuiler.bindFields("",BeanDefUtils.includeField(userEntityDef.getFieldList(),"userId","userName"));
+        sqlBuiler.bindAggregate("USER_NAME",AggregateType.COUNT);
+        sqlBuiler.bindAlias("USER_ID","uid");
+        sqlBuiler.bindAlias("USER_NAME","uname");
+        printSql("单表查询-6",sqlBuiler);
     }
 
     @Test

@@ -170,7 +170,7 @@ public class JdbcEntityDao implements InitializingBean {
                 return rows;
             });
         }catch (Exception e){
-            if (showSql && showSqlMode != ShowSqlMode.SQL_ON_ERROR) {
+            if (showSql && showSqlMode == ShowSqlMode.SQL_ON_ERROR) {
                 printSql(-1,sqlObject.getSql(), sqlObject.getParamValueList(),null);
             }
             throw e;
@@ -178,7 +178,7 @@ public class JdbcEntityDao implements InitializingBean {
 
 
         //如果输出sql模式为显示执行时间，则仅能在操作后输出sql
-        if (showSql && showSqlMode != ShowSqlMode.SQL) {
+        if (showSql && (showSqlMode == ShowSqlMode.TIME_SQL ||  showSqlMode == ShowSqlMode.TIME_SQL)) {
             long endTime = System.currentTimeMillis();
             printSql((endTime-startTime),sqlObject.getSql(), sqlObject.getParamValueList(),null);
         }
@@ -408,14 +408,14 @@ public class JdbcEntityDao implements InitializingBean {
                 return recordMapList;
             }, paramList.toArray());
         }catch (Exception e){
-            if (showSql && showSqlMode != ShowSqlMode.SQL_ON_ERROR) {
+            if (showSql && showSqlMode == ShowSqlMode.SQL_ON_ERROR) {
                 printSql(-1,sql, paramList,signInfo);
             }
             throw e;
         }
 
 
-        if (showSql && showSqlMode != ShowSqlMode.SQL) {
+        if (showSql && (showSqlMode == ShowSqlMode.TIME_SQL ||  showSqlMode == ShowSqlMode.TIME_SQL)) {
             long endTime = System.currentTimeMillis();
             printSql((endTime-startTime),sql, paramList,signInfo);
         }
@@ -553,14 +553,14 @@ public class JdbcEntityDao implements InitializingBean {
                 return 0L;
             }, paramList.toArray());
         }catch (Exception e){
-            if (showSql && showSqlMode != ShowSqlMode.SQL_ON_ERROR) {
+            if (showSql && showSqlMode == ShowSqlMode.SQL_ON_ERROR) {
                 printSql(-1,sql, paramList,signInfo);
             }
             throw e;
         }
 
 
-        if (showSql && showSqlMode != ShowSqlMode.SQL) {
+        if (showSql && (showSqlMode == ShowSqlMode.TIME_SQL ||  showSqlMode == ShowSqlMode.TIME_SQL)) {
             long endTime = System.currentTimeMillis();
             printSql((endTime-startTime),countSql, paramList,signInfo);
         }
@@ -617,13 +617,13 @@ public class JdbcEntityDao implements InitializingBean {
                 return statement.executeUpdate();
             });
         }catch (Exception e){
-            if (showSql && showSqlMode != ShowSqlMode.SQL_ON_ERROR) {
+            if (showSql && showSqlMode == ShowSqlMode.SQL_ON_ERROR) {
                 printSql(-1,sql, valueList,null);
             }
             throw e;
         }
 
-        if (showSql && showSqlMode != ShowSqlMode.SQL) {
+        if (showSql && (showSqlMode == ShowSqlMode.TIME_SQL ||  showSqlMode == ShowSqlMode.TIME_SQL)) {
             long endTime = System.currentTimeMillis();
             printSql((endTime-startTime),sql, valueList,null);
         }

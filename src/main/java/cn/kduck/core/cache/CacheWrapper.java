@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.cache.Cache;
 import org.springframework.lang.Nullable;
+import org.springframework.util.Assert;
 
 import java.io.IOException;
 import java.util.Date;
@@ -89,6 +90,8 @@ public class CacheWrapper implements Cache {
     }
 
     public void put(Object key, Object value,Date expired) {
+        Assert.notNull(key,"缓存key不能为null");
+        Assert.notNull(key,"缓存value不能为null");
         //TODO 处理日期直接过期的情况
         String jsonValue = null;
         if(value != null){
