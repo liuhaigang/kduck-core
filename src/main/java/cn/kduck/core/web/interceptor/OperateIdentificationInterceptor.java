@@ -62,7 +62,7 @@ public class OperateIdentificationInterceptor implements HandlerInterceptor {
 
         public void addOperateObject(OperateObject operateObject){
             if(operateObjectList.size() >= max){
-                logger.warn("不能缓存当前操作对象，已经到达限制数量：" + max);
+                logger.debug("不能缓存当前操作对象，已经到达限制数量：" + max);
                 return;
             }
 //            cleanOperateObject(operateObject);
@@ -101,7 +101,7 @@ public class OperateIdentificationInterceptor implements HandlerInterceptor {
         public static String getUniqueId(){
             OperateIdentification oid = optObject.get();
             if(oid == null){
-                logger.warn("请通过Controller方式请求后获取操作标识ID，无法对删除的数据进行分组归档");
+                logger.debug("请通过Controller方式请求后获取操作标识ID，无法对删除的数据进行分组归档");
                 return "[GROUP FAIL]";
             }
             return oid.getUniqueId();

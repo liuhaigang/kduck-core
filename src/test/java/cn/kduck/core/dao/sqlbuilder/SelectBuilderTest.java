@@ -112,7 +112,8 @@ public class SelectBuilderTest {
         printSql("单表查询-2",sqlBuiler);
 
         sqlBuiler = new SelectBuilder(userEntityDef,paramMap);
-        sqlBuiler.bindFields("",BeanDefUtils.includeField(userEntityDef.getFieldList(),"userId"));
+//        sqlBuiler.bindFields("",BeanDefUtils.includeField(userEntityDef.getFieldList(),"userId"));
+        sqlBuiler.bindFields("","userId");
         sqlBuiler.bindAggregate("USER_ID",AggregateType.COUNT);
         sqlBuiler.where("USER_NAME", ConditionType.CONTAINS,"userName")
                 .and("USER_NAME",ConditionType.NOT_IN,"userName")
@@ -130,7 +131,8 @@ public class SelectBuilderTest {
         printSql("单表查询-5",sqlBuiler);
 
         sqlBuiler = new SelectBuilder(userEntityDef,paramMap);
-        sqlBuiler.bindFields("",BeanDefUtils.includeField(userEntityDef.getFieldList(),"userId","userName"));
+//        sqlBuiler.bindFields("",BeanDefUtils.includeField(userEntityDef.getFieldList(),"userId","userName"));
+        sqlBuiler.bindFields("","userId","userName");
         sqlBuiler.bindAggregate("USER_NAME",AggregateType.COUNT);
         sqlBuiler.bindAlias("USER_ID","uid");
         sqlBuiler.bindAlias("USER_NAME","uname");
@@ -142,9 +144,9 @@ public class SelectBuilderTest {
         Map<String, Object> paramMap = ParamMap.create("userName", "刚").set("age","12").toMap();
 
         SelectBuilder sqlBuiler = new SelectBuilder(paramMap);
-        sqlBuiler.bindFields("a",userEntityDef.getFieldList())
-                .bindFields("b", BeanDefUtils.excludeField(orgUserEntityDef.getFieldList(),"userId"));
-//        sqlBuiler.bindFields("a").bindFields(true,"b","orgUserId");
+//        sqlBuiler.bindFields("a",userEntityDef.getFieldList())
+//                .bindFields("b", BeanDefUtils.excludeField(orgUserEntityDef.getFieldList(),"userId"));
+        sqlBuiler.bindFields("a").bindFields("b",false,"orgUserId");
 //        sqlBuiler.bindAlias("a.USER_ID","id");
         sqlBuiler.from("a",userEntityDef).innerJoin("b",orgUserEntityDef)
         .where().and("a.USER_NAME", ConditionType.BEGIN_WITH,"userName").or("a.AGE", ConditionType.IS_NOT_EMPTY);
@@ -159,7 +161,8 @@ public class SelectBuilderTest {
         paramMap.put("gender","1");
 
         SelectBuilder sqlBuiler = new SelectBuilder(paramMap);
-        sqlBuiler.bindFields("a",userEntityDef.getFieldList());
+//        sqlBuiler.bindFields("a",userEntityDef.getFieldList());
+        sqlBuiler.bindFields("a");
         sqlBuiler.from("a",userEntityDef).innerJoin("b",orgUserEntityDef).leftJoin("c",orgEntityDef).where().
                 and("a.USER_NAME", ConditionType.CONTAINS,"userName")
                 .and("a.GENDER", ConditionType.EQUALS,"gender");
@@ -167,12 +170,14 @@ public class SelectBuilderTest {
 
         paramMap.put("orgId","orgIdValue");
         sqlBuiler = new SelectBuilder(paramMap);
-        sqlBuiler.bindFields("a",userEntityDef.getFieldList());
+//        sqlBuiler.bindFields("a",userEntityDef.getFieldList());
+        sqlBuiler.bindFields("a");
         sqlBuiler.from("a",userEntityDef).innerJoin("b",orgUserEntityDef).andOn("b.ORG_ID",ConditionType.EQUALS,"orgId").leftJoin("c",orgEntityDef).where().and("a.USER_NAME", ConditionType.CONTAINS,"userName");
         printSql("三表查询（多join条件）",sqlBuiler);
 
         sqlBuiler = new SelectBuilder(paramMap);
-        sqlBuiler.bindFields("a",userEntityDef.getFieldList());
+//        sqlBuiler.bindFields("a",userEntityDef.getFieldList());
+        sqlBuiler.bindFields("a");
         sqlBuiler.from("a",userEntityDef).innerJoin("b",orgUserEntityDef).innerJoinOn("c",orgEntityDef,"userId:orgId",userEntityDef).where().and("a.USER_NAME", ConditionType.CONTAINS,"userName");
         printSql("三表查询（自定义join的实体）",sqlBuiler);
     }
@@ -199,8 +204,9 @@ public class SelectBuilderTest {
         paramMap.put("userName","某某某");
 
         SelectBuilder sqlBuiler = new SelectBuilder(paramMap);
-        sqlBuiler.bindFields("a",userEntityDef.getFieldList())
-                .bindFields("b", BeanDefUtils.excludeField(orgUserEntityDef.getFieldList(),"userId"));
+//        sqlBuiler.bindFields("a",userEntityDef.getFieldList())
+//                .bindFields("b", BeanDefUtils.excludeField(orgUserEntityDef.getFieldList(),"userId"));
+        sqlBuiler.bindFields("a");
         sqlBuiler.bindAggregate("a.USER_NAME",AggregateType.COUNT);
         sqlBuiler.from("a",userEntityDef).innerJoin("b",orgUserEntityDef)
         .where().and("a.USER_NAME", ConditionType.CONTAINS,"userName").groupBy("a.GENDER","a.USER_NAME").orderBy().asc("a.USER_NAME");
@@ -213,8 +219,9 @@ public class SelectBuilderTest {
         Map<String, Object> paramMap = ParamMap.create("userName", "刚").set("age","18").set("orgId","机构Id").set("gender","1").toMap();
 
         SelectBuilder sqlBuiler = new SelectBuilder(paramMap);
-        sqlBuiler.bindFields("a",userEntityDef.getFieldList())
-                .bindFields("b", BeanDefUtils.excludeField(orgUserEntityDef.getFieldList(),"userId"));
+//        sqlBuiler.bindFields("a",userEntityDef.getFieldList())
+//                .bindFields("b", BeanDefUtils.excludeField(orgUserEntityDef.getFieldList(),"userId"));
+        sqlBuiler.bindFields("a");
         sqlBuiler.from("a",userEntityDef).innerJoin("b",orgUserEntityDef)
                 .where().and("a.USER_NAME", ConditionType.BEGIN_WITH,"userName")
                 .groupBegin("a.BIRTHDAY",ConditionType.LESS,"age").and("b.ORG_ID",ConditionType.EQUALS,"orgId");

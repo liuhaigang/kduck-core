@@ -152,6 +152,7 @@ public class SelectBuilder {
      * @param fields 表返回的字段定义集合
      * @return 构造器自身
      * @see BeanDefUtils BeanDefUtils
+     * @deprecated 请参考使用 {@link #bindFields(String, String...)}
      */
     public SelectBuilder bindFields(String alias, List<BeanFieldDef> fields){
         List<AliasField> selectField = new ArrayList<>(fields.size());
@@ -162,25 +163,35 @@ public class SelectBuilder {
         return this;
     }
 
-    //暂不开放使用
-//    /**
-//     * 为开发时方便设置查询返回的字段而存在的方法，如果设置了此方法会覆盖{@link #bindFields(String, List)}的配置。
-//     * @param alias 表别名
-//     * @param attrNames 返回的字段属性名，如果需要设置别名。如果需要设置别名，则以属性名+":"+别名的格式设置，例如：name:userName
-//     * @return SelectBuilder自身
-//     */
-//    public SelectBuilder bindFields(String alias, String... attrNames){
-//        fieldAttrNameMap.put(alias,attrNames);
-//        return this;
-//    }
-//
-//    public SelectBuilder bindFields(boolean reverse,String alias, String... attrNames){
-//        if(reverse){
-//            alias = "!" + alias;
-//        }
-//        fieldAttrNameMap.put(alias,attrNames);
-//        return this;
-//    }
+    /**
+     * 多表查询时，指定返回的表字段。因为多表查询返回的字段会有所不同，依靠此方法来分别指定不同表返回的字段。
+     * 使用该方法的前提是没有在构造时提供字段集合。<p/>
+     * 如果设置了此方法会覆盖{@link #bindFields(String, List)}的配置。
+     * @param alias 表别名
+     * @param attrNames 返回的字段属性名，如果需要设置别名。如果需要设置别名，则以属性名+":"+别名的格式设置，例如：name:userName
+     * @return SelectBuilder自身
+     */
+    public SelectBuilder bindFields(String alias, String... attrNames){
+        fieldAttrNameMap.put(alias,attrNames);
+        return this;
+    }
+
+    /**
+     * 多表查询时，指定返回的表字段，根据include参数决定是包含，还是排除字段。因为多表查询返回的字段会有所不同，依靠此方法来分别指定不同表返回的字段。
+     * 使用该方法的前提是没有在构造时提供字段集合。<p/>
+     * 如果设置了此方法会覆盖{@link #bindFields(String, List)}的配置。
+     * @param alias 表别名
+     * @param include true 包含指定字段，false 排除指定字段
+     * @param attrNames 返回的字段属性名，如果需要设置别名。如果需要设置别名，则以属性名+":"+别名的格式设置，例如：name:userName
+     * @return SelectBuilder自身
+     */
+    public SelectBuilder bindFields(String alias, boolean include,String... attrNames){
+        if(!include){
+            alias = "!" + alias;
+        }
+        fieldAttrNameMap.put(alias,attrNames);
+        return this;
+    }
 
     public SelectBuilder bindAliasField(String alias, BeanFieldDef field,String fieldAlias){
         List<AliasField> selectField = fieldMap.get(alias);
