@@ -152,6 +152,17 @@ public class SelectBuilderTest {
         .where().and("a.USER_NAME", ConditionType.BEGIN_WITH,"userName").or("a.AGE", ConditionType.IS_NOT_EMPTY);
         sqlBuiler.bindAggregate("a.AGE", AggregateType.COUNT);
         printSql("两表查询",sqlBuiler);
+
+        Map<String, Object> orgParamMap = ParamMap.create("orgName", "刚").toMap();
+
+        SelectBuilder orgSqlBuiler = new SelectBuilder(orgParamMap);
+        orgSqlBuiler.bindFields("a",orgEntityDef.getFieldList())
+                .bindFields("b", BeanDefUtils.includeField(orgEntityDef.getFieldList(),"orgName"));
+        orgSqlBuiler.bindAlias("b.org_name","orgLhg");
+        orgSqlBuiler.from("a",orgEntityDef).innerJoinOn("b",orgEntityDef,"orgId")
+                .where().and("a.ORG_NAME", ConditionType.BEGIN_WITH,"orgName");
+//        orgSqlBuiler.bindAggregate("a.AGE", AggregateType.COUNT);
+        printSql("自关联两表查询",orgSqlBuiler);
     }
 
     @Test

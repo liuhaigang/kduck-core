@@ -15,8 +15,18 @@ public class KduckProperties {
 
     private EntityDefinitionProperties definition;
 
+    private ExceptionProperties exception;
+
     //######### 多数据源配置 #############
     private Map dataSource;
+
+    public ExceptionProperties getException() {
+        return exception;
+    }
+
+    public void setException(ExceptionProperties exception) {
+        this.exception = exception;
+    }
 
     public Map getDataSource() {
         return dataSource;
@@ -158,5 +168,33 @@ public class KduckProperties {
         TIME_SQL,
         JUST_SLOW_SQL,
         SQL_ON_ERROR;
+    }
+
+    public static class ExceptionProperties{
+        private boolean includeMessage = false;
+        private ExceptionNoticeType noticeType;
+
+        public boolean isIncludeMessage() {
+            return includeMessage;
+        }
+
+        public void setIncludeMessage(boolean includeMessage) {
+            this.includeMessage = includeMessage;
+        }
+
+        public ExceptionNoticeType getNoticeType() {
+            return noticeType;
+        }
+
+        public void setNoticeType(ExceptionNoticeType noticeType) {
+            this.noticeType = noticeType;
+        }
+    }
+
+    public enum ExceptionNoticeType {
+        NONE,
+        EMAIL,
+        SMS,
+        API;
     }
 }

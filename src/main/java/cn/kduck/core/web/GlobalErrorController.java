@@ -1,5 +1,6 @@
 package cn.kduck.core.web;
 
+import cn.kduck.core.exception.KduckException;
 import cn.kduck.core.web.json.JsonObject;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.web.servlet.error.AbstractErrorController;
@@ -11,6 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.context.request.ServletWebRequest;
 import org.springframework.web.servlet.ModelAndView;
 
 import javax.servlet.http.HttpServletRequest;
@@ -27,8 +29,11 @@ public class GlobalErrorController extends AbstractErrorController {
 	public static final String GLOBAL_ERROR_MESSAGE = "GLOBAL_ERROR_MESSAGE";
 	public static final String GLOBAL_ERROR_CODE = "GLOBAL_ERROR_CODE";
 
+	private ErrorAttributes errorAttributes;
+
 	public GlobalErrorController(ErrorAttributes errorAttributes, List<ErrorViewResolver> errorViewResolvers) {
 		super(errorAttributes,errorViewResolvers);
+		this.errorAttributes = errorAttributes;
 	}
 	
 	@RequestMapping(produces = "text/html")
@@ -45,6 +50,12 @@ public class GlobalErrorController extends AbstractErrorController {
 	@RequestMapping
 	@ResponseBody
 	public JsonObject errorJson(HttpServletRequest request) {
+
+		Throwable error = errorAttributes.getError(new ServletWebRequest(request));
+		if(error instanceof KduckException){
+
+		}
+
 		Map<String, Object> body = getErrorAttributes(request, ErrorAttributeOptions.defaults());
 		HttpStatus status = getStatus(request);
 		ResponseEntity<Map<String, Object>> responseEntity = new ResponseEntity<Map<String, Object>>(body, status);

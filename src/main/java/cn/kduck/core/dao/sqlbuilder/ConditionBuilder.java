@@ -336,7 +336,12 @@ public abstract class ConditionBuilder {
                             sqlBuidler.append(condition.getCondition(groupCount * GROUP_SPLIT_SIZE, groupCount * GROUP_SPLIT_SIZE + GROUP_SPLIT_SIZE));
                             groupCount++;
                             if((i+1) < maxIndex){
-                                sqlBuidler.append(" OR ");
+                                if(conditionType == ConditionType.NOT_IN){
+                                    sqlBuidler.append(" AND ");
+                                }else{
+                                    sqlBuidler.append(" OR ");
+                                }
+
                             }
                             logger.warn("当前查询SQL语句的IN条件元素已经达到" + (groupCount*GROUP_SPLIT_SIZE) + "，请考虑逻辑优化");
                         }
