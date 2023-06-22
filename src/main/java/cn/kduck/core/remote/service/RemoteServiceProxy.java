@@ -226,7 +226,7 @@ public class RemoteServiceProxy implements FactoryBean,ApplicationContextAware, 
                     return responseEntity.getBody();
                 }
             }catch (Throwable e){
-                throw new RemoteException("调用远程接口失败：" + servicePath,e);
+                throw new RemoteException(serviceName,"调用远程接口失败：" + servicePath,e);
             }
         }
 
