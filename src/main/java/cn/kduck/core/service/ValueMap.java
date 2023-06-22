@@ -3,6 +3,7 @@ package cn.kduck.core.service;
 import cn.kduck.core.service.ParamMap.Param;
 import cn.kduck.core.dao.query.QuerySupport;
 import cn.kduck.core.dao.query.formater.ValueFormatter;
+import cn.kduck.core.utils.ConversionUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import cn.kduck.core.utils.ValueMapUtils;
 import org.springframework.beans.BeanUtils;
@@ -46,8 +47,9 @@ public class ValueMap extends HashMap<String,Object> {
                 if(value != null) {
                     PropertyDescriptor propertyDescriptor = BeanUtils.getPropertyDescriptor(targetClass, keyName);
                     Method writeMethod = propertyDescriptor.getWriteMethod();
+                    Class<?> propertyType = propertyDescriptor.getPropertyType();
                     try {
-                        writeMethod.invoke(targetObject,value);
+                        writeMethod.invoke(targetObject, ConversionUtils.convert(value,propertyType));
                     } catch (Exception e) {
                         throw new RuntimeException("根据" + targetClass.getName() +"转换错误：name=" + keyName +",value=" + value,e);
                     }

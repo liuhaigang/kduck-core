@@ -4,9 +4,7 @@ import cn.kduck.core.dao.query.QuerySupport;
 import cn.kduck.core.dao.sqlbuilder.SelectBuilder.AggregateType;
 import cn.kduck.core.dao.sqlbuilder.SelectConditionBuilder.OrderBuilder.OrderType;
 
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Select操作的条件构造器
@@ -192,30 +190,43 @@ public abstract class SelectConditionBuilder extends ConditionBuilder{
     public static class DynamicOrderBuilder extends OrderBuilder{
 
         private Map<String,String> mappingMap = new LinkedHashMap<>();
+        private Map<String,String> defaultOrderMap = new LinkedHashMap<>();
 
         public DynamicOrderBuilder mapping(String fieldName,String paramName){
             mappingMap.put(paramName,fieldName);
             return this;
         }
 
+        public DynamicOrderBuilder defaultOrder(String fieldName,OrderType orderType){
+            defaultOrderMap.put(fieldName,orderType.name());
+            return this;
+        }
+
         @Override
         protected Map<String,OrderType> getOrderMap(Map<String, Object> valueMap){
             if(!mappingMap.isEmpty()){
-                Iterator<String> nameIterator = mappingMap.keySet().iterator();
-                while(nameIterator.hasNext()){
-                    String orderParamName = nameIterator.next();
-                    Object orderParamValue = valueMap.get(orderParamName);
-                    if(orderParamValue != null){
-                        String orderType = orderParamValue.toString().toUpperCase();
-                        if("DESC".equals(orderType)){
-                            super.desc(mappingMap.get(orderParamName));
-                        }else if("ASC".equals(orderType)){
-                            super.asc(mappingMap.get(orderParamName));
-                        }
+                processDynamicOrder(mappingMap,valueMap);
+            }else if(!defaultOrderMap.isEmpty()){
+                processDynamicOrder(defaultOrderMap,valueMap);
+            }
+
+            return super.getOrderMap(valueMap);
+        }
+
+        private void processDynamicOrder(Map<String,String> orderMap,Map<String, Object> valueMap) {
+            Iterator<String> nameIterator = orderMap.keySet().iterator();
+            while(nameIterator.hasNext()){
+                String orderParamName = nameIterator.next();
+                Object orderParamValue = valueMap.get(orderParamName);
+                if(orderParamValue != null){
+                    String orderType = orderParamValue.toString().toUpperCase();
+                    if(OrderType.DESC.name().equals(orderType)){
+                        super.desc(orderMap.get(orderParamName));
+                    }else if(OrderType.ASC.name().equals(orderType)){
+                        super.asc(orderMap.get(orderParamName));
                     }
                 }
             }
-            return super.getOrderMap(valueMap);
         }
 
     }

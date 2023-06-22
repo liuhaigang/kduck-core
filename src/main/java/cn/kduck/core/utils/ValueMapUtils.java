@@ -74,9 +74,7 @@ public final class ValueMapUtils {
             return (List)v;
         }
 
-        ArrayList arrayList = new ArrayList();
-        arrayList.add(v);
-        return arrayList;
+        return Collections.singletonList(v);
     }
 
     public static <T> T[] getValueAsArray(Map<String,Object> valueMap,String name,Class<T> clazz){

@@ -14,7 +14,18 @@ public class ParamMap {
         return new Param();
     }
 
+    /**
+     *
+     * @param name
+     * @param value
+     * @return
+     * @deprecated 由{@link #createAndSet}代替
+     */
     public static Param create(String name,Object value){
+        return new Param(name,value);
+    }
+
+    public static Param createAndSet(String name,Object value){
         return new Param(name,value);
     }
 

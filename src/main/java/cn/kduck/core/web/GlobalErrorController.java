@@ -1,7 +1,10 @@
 package cn.kduck.core.web;
 
 import cn.kduck.core.exception.KduckException;
+import cn.kduck.core.remote.exception.RemoteException;
+import cn.kduck.core.remote.service.RemoteCircuitBreaker;
 import cn.kduck.core.web.json.JsonObject;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.web.servlet.error.AbstractErrorController;
 import org.springframework.boot.autoconfigure.web.servlet.error.ErrorViewResolver;
@@ -31,6 +34,9 @@ public class GlobalErrorController extends AbstractErrorController {
 
 	private ErrorAttributes errorAttributes;
 
+	@Autowired(required = false)
+	private RemoteCircuitBreaker remoteCircuitBreaker;
+
 	public GlobalErrorController(ErrorAttributes errorAttributes, List<ErrorViewResolver> errorViewResolvers) {
 		super(errorAttributes,errorViewResolvers);
 		this.errorAttributes = errorAttributes;
@@ -53,7 +59,11 @@ public class GlobalErrorController extends AbstractErrorController {
 
 		Throwable error = errorAttributes.getError(new ServletWebRequest(request));
 		if(error instanceof KduckException){
+			//TODO
+		}
 
+		if(error instanceof RemoteException && remoteCircuitBreaker != null){
+			return remoteCircuitBreaker.fallback((RemoteException)error);
 		}
 
 		Map<String, Object> body = getErrorAttributes(request, ErrorAttributeOptions.defaults());
