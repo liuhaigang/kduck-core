@@ -100,13 +100,13 @@ public class WebMvcConfiguration implements WebMvcConfigurer, ApplicationContext
         registry.addResourceHandler("/**").addResourceLocations("classpath:/static/");
     }
 
-    @Override
-    public void addCorsMappings(CorsRegistry registry) {
-        registry.addMapping("/**")
-                .allowedOrigins("*")
-                .allowCredentials(false)
-                .allowedMethods("GET","POST");
-    }
+//    @Override
+//    public void addCorsMappings(CorsRegistry registry) {
+//        registry.addMapping("/**")
+//                .allowedOrigins("*")
+//                .allowCredentials(false)
+//                .allowedMethods("GET","POST");
+//    }
 
     /**
      * 配置一个视图解析器，用来显示比如oauth2的用户授权页面，否则因为均是json请求，此视图解析器无需配置
