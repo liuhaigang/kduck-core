@@ -746,6 +746,11 @@ public class DefaultService {
             }
             firstResult = page.getFirstResult();
             maxRow = page.getPageSize();
+
+            //如果没有查询出任何数据则直接返回空集合，不需要再执行下面的分页查询
+            if(page.getCount() == 0){
+                return Collections.emptyList();
+            }
         }
 
         return jdbcEntityDao.executeQuery(queryBean, firstResult, maxRow, filter);
