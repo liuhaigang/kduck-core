@@ -800,6 +800,21 @@ public class DefaultService {
         return resultList;
     }
 
+    public <R extends ValueMap> List<R> listForBean(Class<? extends QueryCreator> queryClass, Map<String, Object> paramMap, Function<Map, R> bean) {
+        QuerySupport queryBean = getQuery(queryClass, paramMap);
+        return listForBean(queryBean, bean);
+    }
+
+    public <R extends ValueMap> List<R> listForBean(Class<? extends QueryCreator> queryClass, Map<String, Object> paramMap, Page page, Function<Map, R> bean) {
+        QuerySupport queryBean = getQuery(queryClass, paramMap);
+        return listForBean(queryBean, page, bean);
+    }
+
+    public <R extends ValueMap> List<R> listForBean(Class<? extends QueryCreator> queryClass, Map<String, Object> paramMap, Page page, FieldFilter filter, Function<Map, R> bean) {
+        QuerySupport queryBean = getQuery(queryClass, paramMap);
+        return listForBean(queryBean, page, filter, bean);
+    }
+
     /**
      * 预留的SQL接口，用于数据写操作，但此方法未经允许不得使用，用于本类其他方法无法实现的场景、应急提供。
      * @param sql SQL语句
