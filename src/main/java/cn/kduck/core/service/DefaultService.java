@@ -746,6 +746,11 @@ public class DefaultService {
             }
             firstResult = page.getFirstResult();
             maxRow = page.getPageSize();
+
+            //如果没有查询出任何数据则直接返回空集合，不需要再执行下面的分页查询
+            if(page.getCount() == 0){
+                return Collections.emptyList();
+            }
         }
 
         return jdbcEntityDao.executeQuery(queryBean, firstResult, maxRow, filter);
@@ -793,6 +798,21 @@ public class DefaultService {
             resultList.add(beanObject);
         }
         return resultList;
+    }
+
+    public <R extends ValueMap> List<R> listForBean(Class<? extends QueryCreator> queryClass, Map<String, Object> paramMap, Function<Map, R> bean) {
+        QuerySupport queryBean = getQuery(queryClass, paramMap);
+        return listForBean(queryBean, bean);
+    }
+
+    public <R extends ValueMap> List<R> listForBean(Class<? extends QueryCreator> queryClass, Map<String, Object> paramMap, Page page, Function<Map, R> bean) {
+        QuerySupport queryBean = getQuery(queryClass, paramMap);
+        return listForBean(queryBean, page, bean);
+    }
+
+    public <R extends ValueMap> List<R> listForBean(Class<? extends QueryCreator> queryClass, Map<String, Object> paramMap, Page page, FieldFilter filter, Function<Map, R> bean) {
+        QuerySupport queryBean = getQuery(queryClass, paramMap);
+        return listForBean(queryBean, page, filter, bean);
     }
 
     /**
