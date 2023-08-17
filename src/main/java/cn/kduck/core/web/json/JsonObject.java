@@ -87,7 +87,7 @@ public class JsonObject {
      * @param name
      * @param value
      */
-    public void addValue(String name,Object value){
+    public JsonObject addValue(String name,Object value){
         if(data == null){
             Map<String,Object> newData = new HashMap();
             newData.put(name,value);
@@ -99,5 +99,6 @@ public class JsonObject {
         }else{
             throw new UnsupportedOperationException("当前JsonObject中的data属性不为null且不是Map对象，不能执行addValue方法添加键值对");
         }
+        return this;
     }
 }
