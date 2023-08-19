@@ -4,14 +4,14 @@ import java.text.DecimalFormat;
 import java.util.Date;
 import java.util.concurrent.TimeUnit;
 
-public class HumanUnitUtils {
+public class HumanUtils {
 
     private static final long ONE_DAY_SECONDS = 60 * 60 * 24;
     private static final long ONE_HOUR_SECONDS = 60 * 60;
 
     private static final String[] UNITS = {"B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"};
 
-    private HumanUnitUtils() {}
+    private HumanUtils() {}
 
     public static String toHumanCapacity(long bytes) {
         if (bytes < 0) {
