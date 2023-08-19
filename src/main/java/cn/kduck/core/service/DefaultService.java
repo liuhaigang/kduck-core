@@ -739,6 +739,12 @@ public class DefaultService {
             if(page.isRecount()){
                 int currentPage = page.getCurrentPage();
                 long count = jdbcEntityDao.executeCount(queryBean,filter);//这里需要调用带filter的方法
+
+                //如果没有查询出任何数据则直接返回空集合，不需要再执行下面的分页查询
+                if(count == 0){
+                    return Collections.emptyList();
+                }
+
                 page.calculate(count);
                 if(page.getMaxPage() < currentPage){
                     return Collections.emptyList();
@@ -747,10 +753,6 @@ public class DefaultService {
             firstResult = page.getFirstResult();
             maxRow = page.getPageSize();
 
-            //如果没有查询出任何数据则直接返回空集合，不需要再执行下面的分页查询
-            if(page.getCount() == 0){
-                return Collections.emptyList();
-            }
         }
 
         return jdbcEntityDao.executeQuery(queryBean, firstResult, maxRow, filter);
