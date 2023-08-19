@@ -6,6 +6,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.type.CollectionType;
 import com.fasterxml.jackson.databind.type.TypeFactory;
 
+import java.io.IOException;
+import java.io.OutputStream;
 import java.util.List;
 
 public class JsonUtils {
@@ -21,6 +23,16 @@ public class JsonUtils {
             return objectMapper.writeValueAsString(object);
         } catch (JsonProcessingException e) {
             throw new RuntimeException("对象"+object.getClass().getName()+"转换为Json字符串失败",e);
+        }
+    }
+
+    public static void writeJson(Object object, OutputStream outputStream) {
+        try {
+            objectMapper.writeValue(outputStream,object);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("对象"+object.getClass().getName()+"转换为Json失败",e);
+        } catch (IOException e) {
+            throw new RuntimeException("将json写入输出流时发生错误",e);
         }
     }
 
