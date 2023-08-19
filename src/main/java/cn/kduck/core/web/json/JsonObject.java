@@ -1,5 +1,7 @@
 package cn.kduck.core.web.json;
 
+import cn.kduck.core.utils.JsonUtils;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -100,5 +102,13 @@ public class JsonObject {
             throw new UnsupportedOperationException("当前JsonObject中的data属性不为null且不是Map对象，不能执行addValue方法添加键值对");
         }
         return this;
+    }
+
+    /**
+     * 将当前对象返回json字符串形式
+     * @return
+     */
+    public String toJson(){
+        return JsonUtils.toJsonString(this);
     }
 }
