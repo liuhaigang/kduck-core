@@ -260,4 +260,25 @@ public class ValueMap extends HashMap<String,Object> {
         return param.toMap();
     }
 
+    /**
+     * 将指定的属性从当前ValueMap中删除
+     * @param names
+     */
+    public void removeValue(String... names){
+        for (String name : names) {
+            super.remove(name);
+        }
+    }
+
+    /**
+     * 将指定的属性名设置值为null，如果指定的name在当前的ValueMap中不存在，则忽略
+     * @param names
+     */
+    public void setNullValue(String... names){
+        for (String name : names) {
+            if(containsKey(name)){
+                setValue(name,null);
+            }
+        }
+    }
 }
