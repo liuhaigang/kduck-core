@@ -62,6 +62,21 @@ public class ParamMap {
             return this;
         }
 
+        public Param setIfNotNull(String name,Object value){
+            if(value != null){
+                set(name,value);
+            }
+            return this;
+        }
+
+        public <T> Param set(String name,T value,Function<T,Boolean> conditionFunction){
+            Boolean result = conditionFunction.apply(value);
+            if(result != null && result.booleanValue()){
+                set(name,value);
+            }
+            return this;
+        }
+
         public Param pick(String... names) {
             Param resultParam = new Param();
             for (String n : names) {

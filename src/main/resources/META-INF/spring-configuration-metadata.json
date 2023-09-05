@@ -127,11 +127,6 @@
       "defaultValue": false
     },
     {
-      "name": "kduck.flow.base-url",
-      "type": "java.lang.String",
-      "description": "K-Duck流程引擎Rest接口路径。"
-    },
-    {
       "name": "kduck.cache.cache-name-prefix",
       "type": "java.lang.String",
       "description": "缓存组名前缀，区分相同组名在不同环境下的使用。"
