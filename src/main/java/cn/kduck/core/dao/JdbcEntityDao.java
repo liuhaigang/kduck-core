@@ -50,13 +50,10 @@ import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Types;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.StringJoiner;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.util.*;
 
 /**
  * @author LiuHG
@@ -509,6 +506,12 @@ public class JdbcEntityDao implements InitializingBean {
                 }
 
                 Object resultValue = JdbcUtils.getResultSetValue(resultSet, i + 1);
+
+                //如果返回为LocalDateTime对象，则转换为Date对象放入结果集中。
+                if(resultValue instanceof LocalDateTime){
+                    ZonedDateTime zonedDateTime = ((LocalDateTime) resultValue).atZone(ZoneId.systemDefault());
+                    resultValue = Date.from(zonedDateTime.toInstant());
+                }
 
                 recordMap.put(attrName, processIdtoString(attrName,resultValue));
 
