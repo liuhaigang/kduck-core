@@ -71,6 +71,7 @@ public class JdbcTypeUtils {
         typeMapping.put("JSON", Types.OTHER);
         // 以下并不是标准的jdbc类型
         typeMapping.put("DATETIME",Types.TIMESTAMP);
+        typeMapping.put("INT", Types.INTEGER);
     }
 
     /**
