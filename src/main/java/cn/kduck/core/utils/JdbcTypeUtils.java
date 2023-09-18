@@ -72,6 +72,9 @@ public class JdbcTypeUtils {
         // 以下并不是标准的jdbc类型
         typeMapping.put("DATETIME",Types.TIMESTAMP);
         typeMapping.put("INT", Types.INTEGER);
+        typeMapping.put("VARCHAR2", Types.VARCHAR);
+        typeMapping.put("NUMBER", Types.INTEGER);
+
     }
 
     /**
