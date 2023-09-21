@@ -7,10 +7,10 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 注意，该对象在被序列化和反序列化时会忽略resourceName属性
+ * 注意，该对象在被序列化和反序列化时会忽略resourceName和resourceGroup属性
  * @author LiuHG
  */
-@JsonIgnoreProperties("resourceName")
+@JsonIgnoreProperties({"resourceName","resourceGroup"})
 public class ResourceValueMap extends ValueMap {
 
     /**资源名*/
