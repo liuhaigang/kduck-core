@@ -62,7 +62,7 @@ public class ModelResourceLoader implements InitializingBean, BeanFactoryAware {
     private void load(){
         ResourceProperties resourceProperties = kduckProperties.getResource();
         String[] packagesToScan = null;
-        if(packagesToScan != null){
+        if(resourceProperties != null){
             packagesToScan = resourceProperties.getBasePackage();
         }
 
@@ -121,7 +121,7 @@ public class ModelResourceLoader implements InitializingBean, BeanFactoryAware {
                     }
 
                     //是否跳过扫描在jar中的资源模块
-                    boolean skipInJar = resourceProperties.isSkipInJar();
+                    boolean skipInJar = resourceProperties == null ? true : resourceProperties.isSkipInJar();
                     if(skipInJar){
                         ProtectionDomain protectionDomain = clazz.getProtectionDomain();
                         CodeSource codeSource = protectionDomain.getCodeSource();
