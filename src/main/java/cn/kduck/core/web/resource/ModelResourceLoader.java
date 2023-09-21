@@ -30,6 +30,8 @@ import org.springframework.web.bind.annotation.*;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
+import java.security.CodeSource;
+import java.security.ProtectionDomain;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -117,6 +119,20 @@ public class ModelResourceLoader implements InitializingBean, BeanFactoryAware {
                         logger.debug("类不存在或无法实例化（比如依赖的import类文件不存在）："+ className, e);
                         continue;
                     }
+
+                    //是否跳过扫描在jar中的资源模块
+                    boolean skipInJar = resourceProperties.isSkipInJar();
+                    if(skipInJar){
+                        ProtectionDomain protectionDomain = clazz.getProtectionDomain();
+                        CodeSource codeSource = protectionDomain.getCodeSource();
+                        if (codeSource != null && codeSource.getLocation() != null) {
+                            String classLocation = codeSource.getLocation().toString();
+                            if (classLocation.contains("/BOOT-INF/lib") || classLocation.endsWith(".jar")) {
+                                continue;
+                            }
+                        }
+                    }
+
                     ResourceValueMap r = processResource(clazz);
 
                     if(r != null){

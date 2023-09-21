@@ -93,6 +93,12 @@
       "sourceType": "cn.kduck.core.KduckProperties$ResourceProperties"
     },
     {
+      "name": "kduck.resource.skip-in-jar",
+      "type": "java.lang.Boolean",
+      "description": "是否跳过扫描在jar中的模块资源。",
+      "sourceType": "cn.kduck.core.KduckProperties$ResourceProperties"
+    },
+    {
       "name": "kduck.resource.enabled",
       "type": "java.lang.Boolean",
       "description": "是否启用资源扫描。",
