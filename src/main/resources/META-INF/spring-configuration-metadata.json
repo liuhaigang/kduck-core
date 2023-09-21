@@ -99,6 +99,12 @@
       "sourceType": "cn.kduck.core.KduckProperties$ResourceProperties"
     },
     {
+      "name": "kduck.resource.resourceGroup",
+      "type": "java.lang.String",
+      "description": "资源全局分组，为当前所有接口设置统一的分组名。",
+      "sourceType": "cn.kduck.core.KduckProperties$ResourceProperties"
+    },
+    {
       "name": "kduck.resource.enabled",
       "type": "java.lang.Boolean",
       "description": "是否启用资源扫描。",
