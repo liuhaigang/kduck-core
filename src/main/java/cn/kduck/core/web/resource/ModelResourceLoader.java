@@ -120,6 +120,7 @@ public class ModelResourceLoader implements InitializingBean, BeanFactoryAware {
                         continue;
                     }
 
+                    String resourceGroup = resourceProperties == null ? null : resourceProperties.getResourceGroup();
                     //是否跳过扫描在jar中的资源模块
                     boolean skipInJar = resourceProperties == null ? true : resourceProperties.isSkipInJar();
                     if(skipInJar){
@@ -133,7 +134,7 @@ public class ModelResourceLoader implements InitializingBean, BeanFactoryAware {
                         }
                     }
 
-                    ResourceValueMap r = processResource(clazz);
+                    ResourceValueMap r = processResource(resourceGroup,clazz);
 
                     if(r != null){
                         total++;
@@ -174,7 +175,7 @@ public class ModelResourceLoader implements InitializingBean, BeanFactoryAware {
      * @param clazz
      * @return
      */
-    private ResourceValueMap processResource(Class<?> clazz) {
+    private ResourceValueMap processResource(String resourceGroup,Class<?> clazz) {
         ModelResource resourceAnno = AnnotationUtils.findAnnotation(clazz, ModelResource.class);
         if(resourceAnno != null){
             RequestMapping requestMappingAnno = AnnotationUtils.findAnnotation(clazz,RequestMapping.class);
@@ -190,8 +191,11 @@ public class ModelResourceLoader implements InitializingBean, BeanFactoryAware {
                 resource.setResourceName(resCode);
             }
 
+            String group = resourceAnno.group();
+            group = "".equals(group) ? resourceGroup : group;
+
+            resource.setResourceGroup(group);
             resource.setVersion(resourceAnno.version());
-            resource.setResourceGroup(resourceAnno.group());
             resource.setResourceCode(resCode);
 
             List<OperateValueMap> resourceOperates = null;

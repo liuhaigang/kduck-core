@@ -121,6 +121,7 @@ public class KduckProperties {
     }
 
     public static class ResourceProperties{
+        private String resourceGroup;
         private boolean enabled;
         private boolean skipInJar = true;
         private String[] basePackage;
@@ -147,6 +148,14 @@ public class KduckProperties {
 
         public void setSkipInJar(boolean skipInJar) {
             this.skipInJar = skipInJar;
+        }
+
+        public String getResourceGroup() {
+            return resourceGroup;
+        }
+
+        public void setResourceGroup(String resourceGroup) {
+            this.resourceGroup = resourceGroup;
         }
     }
 
