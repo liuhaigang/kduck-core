@@ -174,6 +174,8 @@ public class ModelResourceLoader implements InitializingBean, BeanFactoryAware {
                 resource.setResourceName(resCode);
             }
 
+            resource.setVersion(resourceAnno.version());
+            resource.setResourceGroup(resourceAnno.group());
             resource.setResourceCode(resCode);
 
             List<OperateValueMap> resourceOperates = null;

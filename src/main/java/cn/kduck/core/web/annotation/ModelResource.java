@@ -16,4 +16,5 @@ public @interface ModelResource {
     String code() default "";
     String value() default "";
     String version() default "1.0";
+    String group() default "default";
 }
