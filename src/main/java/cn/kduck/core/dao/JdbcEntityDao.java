@@ -175,7 +175,7 @@ public class JdbcEntityDao implements InitializingBean {
 
 
         //如果输出sql模式为显示执行时间，则仅能在操作后输出sql
-        if (showSql && (showSqlMode == ShowSqlMode.TIME_SQL ||  showSqlMode == ShowSqlMode.TIME_SQL)) {
+        if (showSql && (showSqlMode == ShowSqlMode.TIME_SQL ||  showSqlMode == ShowSqlMode.SQL_ON_ERROR)) {
             long endTime = System.currentTimeMillis();
             printSql((endTime-startTime),sqlObject.getSql(), sqlObject.getParamValueList(),null);
         }
@@ -243,7 +243,7 @@ public class JdbcEntityDao implements InitializingBean {
                     }
                 }
             }
-            isBatch = paramArray && paramValueList.size() > 1? true : false;
+            isBatch = paramArray && paramValueList.size() > 1;
         }
 
         @Override
@@ -390,9 +390,7 @@ public class JdbcEntityDao implements InitializingBean {
                 while (rs.next()) {
                     Map<String, Object> recordMap = resultSet2Map(rs, fieldDefList);
                     if (valueFormaters != null && !valueFormaters.isEmpty()) {
-                        Iterator<String> keys = valueFormaters.keySet().iterator();
-                        while (keys.hasNext()) {
-                            String attrName = keys.next();
+                        for (String attrName : valueFormaters.keySet()) {
                             if (recordMap.containsKey(attrName)) {
                                 ValueFormatter vf = valueFormaters.get(attrName);
                                 Object v = recordMap.get(attrName);
@@ -412,7 +410,7 @@ public class JdbcEntityDao implements InitializingBean {
         }
 
 
-        if (showSql && (showSqlMode == ShowSqlMode.TIME_SQL ||  showSqlMode == ShowSqlMode.TIME_SQL)) {
+        if (showSql && (showSqlMode == ShowSqlMode.TIME_SQL ||  showSqlMode == ShowSqlMode.SQL_ON_ERROR)) {
             long endTime = System.currentTimeMillis();
             printSql((endTime-startTime),sql, paramList,signInfo);
         }
@@ -439,7 +437,7 @@ public class JdbcEntityDao implements InitializingBean {
 
     protected String getDatabaseName(){
         String dbName = null;
-        try (Connection connection = jdbcTemplate.getDataSource().getConnection()){
+        try (Connection connection = Objects.requireNonNull(jdbcTemplate.getDataSource()).getConnection()){
             dbName = connection.getMetaData().getDatabaseProductName();
         } catch (SQLException e) {
             throw new RuntimeException("获取数据库类型错误："+ dbName,e);
@@ -550,10 +548,11 @@ public class JdbcEntityDao implements InitializingBean {
         Long countResult;
         try{
             countResult = jdbcTemplate.query(countSql, (rs) -> {
+                long count = 0L;
                 while (rs.next()) {
-                    return rs.getLong(1);
+                    count = rs.getLong(1);
                 }
-                return 0L;
+                return count;
             }, paramList.toArray());
         }catch (Exception e){
             if (showSql && showSqlMode == ShowSqlMode.SQL_ON_ERROR) {
@@ -563,7 +562,7 @@ public class JdbcEntityDao implements InitializingBean {
         }
 
 
-        if (showSql && (showSqlMode == ShowSqlMode.TIME_SQL ||  showSqlMode == ShowSqlMode.TIME_SQL)) {
+        if (showSql && (showSqlMode == ShowSqlMode.TIME_SQL ||  showSqlMode == ShowSqlMode.SQL_ON_ERROR)) {
             long endTime = System.currentTimeMillis();
             printSql((endTime-startTime),countSql, paramList,signInfo);
         }
@@ -626,7 +625,7 @@ public class JdbcEntityDao implements InitializingBean {
             throw e;
         }
 
-        if (showSql && (showSqlMode == ShowSqlMode.TIME_SQL ||  showSqlMode == ShowSqlMode.TIME_SQL)) {
+        if (showSql && (showSqlMode == ShowSqlMode.TIME_SQL ||  showSqlMode == ShowSqlMode.SQL_ON_ERROR)) {
             long endTime = System.currentTimeMillis();
             printSql((endTime-startTime),sql, valueList,null);
         }
@@ -646,20 +645,19 @@ public class JdbcEntityDao implements InitializingBean {
     }
 
     protected void printSql(long time,String label, String sql, List<Object> paramList, SignatureInfo signatureInfo){
-        List printParam = new ArrayList(paramList.size());
+        List<Object> printParam = new ArrayList<>(paramList.size());
         String paramJson;
         try {
-            for (int i = 0; i < paramList.size(); i++) {
-                Object rowParam = paramList.get(i);
-                if(rowParam.getClass().isArray()){
-                    Object[] paramItems = (Object[])rowParam;
+            for (Object rowParam : paramList) {
+                if (rowParam.getClass().isArray()) {
+                    Object[] paramItems = (Object[]) rowParam;
                     Object[] tempItems = new Object[paramItems.length];
                     for (int i1 = 0; i1 < paramItems.length; i1++) {
                         Object paramItem = paramItems[i1];
                         tempItems[i1] = unwrapParamValue(paramItem);
                     }
                     printParam.add(tempItems);
-                }else{
+                } else {
                     printParam.add(unwrapParamValue(rowParam));
                 }
             }
