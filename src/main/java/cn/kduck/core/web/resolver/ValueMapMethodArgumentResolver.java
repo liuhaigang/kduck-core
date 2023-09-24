@@ -2,6 +2,8 @@ package cn.kduck.core.web.resolver;
 
 import cn.kduck.core.service.ValueMap;
 import cn.kduck.core.utils.RequestUtils;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.BeanUtils;
 import org.springframework.core.MethodParameter;
 import org.springframework.http.MediaType;
@@ -14,8 +16,6 @@ import org.springframework.web.bind.support.WebDataBinderFactory;
 import org.springframework.web.context.request.NativeWebRequest;
 import org.springframework.web.method.annotation.ModelAttributeMethodProcessor;
 
-import javax.servlet.ServletRequest;
-import javax.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.Map;
 

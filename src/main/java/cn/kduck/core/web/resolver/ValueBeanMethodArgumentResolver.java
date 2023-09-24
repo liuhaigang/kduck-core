@@ -3,6 +3,7 @@ package cn.kduck.core.web.resolver;
 import cn.kduck.core.dao.definition.BeanDefDepository;
 import cn.kduck.core.dao.definition.BeanEntityDef;
 import cn.kduck.core.web.annotation.RequestValueBean;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.core.MethodParameter;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
@@ -15,7 +16,6 @@ import org.springframework.web.method.support.ModelAndViewContainer;
 import cn.kduck.core.service.ValueBean;
 import cn.kduck.core.utils.RequestUtils;
 
-import javax.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.Map;
 

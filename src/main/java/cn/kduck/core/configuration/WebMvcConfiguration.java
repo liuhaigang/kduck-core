@@ -43,7 +43,6 @@ import org.springframework.web.servlet.config.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter;
 import org.springframework.web.servlet.view.InternalResourceViewResolver;
 
-import javax.annotation.PostConstruct;
 import java.util.Arrays;
 import java.util.List;
 

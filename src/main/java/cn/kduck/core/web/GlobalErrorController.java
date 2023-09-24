@@ -4,8 +4,9 @@ import cn.kduck.core.exception.KduckException;
 import cn.kduck.core.remote.exception.RemoteException;
 import cn.kduck.core.remote.service.RemoteCircuitBreaker;
 import cn.kduck.core.web.json.JsonObject;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.web.servlet.error.AbstractErrorController;
 import org.springframework.boot.autoconfigure.web.servlet.error.ErrorViewResolver;
 import org.springframework.boot.web.error.ErrorAttributeOptions;
@@ -18,8 +19,6 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.context.request.ServletWebRequest;
 import org.springframework.web.servlet.ModelAndView;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -44,7 +43,7 @@ public class GlobalErrorController extends AbstractErrorController {
 	
 	@RequestMapping(produces = "text/html")
 	public ModelAndView errorHtml(HttpServletRequest request,
-			HttpServletResponse response) {
+								  HttpServletResponse response) {
 		HttpStatus status = getStatus(request);
 		Map<String, Object> model = Collections.unmodifiableMap(getErrorAttributes(
 				request, ErrorAttributeOptions.defaults()));

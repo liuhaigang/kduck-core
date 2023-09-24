@@ -6,13 +6,13 @@ import cn.kduck.core.web.interceptor.OperateIdentificationInterceptor.OidHolder;
 import cn.kduck.core.web.interceptor.OperateIdentificationInterceptor.OperateIdentification;
 import cn.kduck.core.web.interceptor.operateinfo.OperateInfo;
 import cn.kduck.core.web.interceptor.operateinfo.OperateInfoHandler;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerInterceptor;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import java.lang.reflect.Method;
 
 /**

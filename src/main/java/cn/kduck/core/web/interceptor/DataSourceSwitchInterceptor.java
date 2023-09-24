@@ -1,10 +1,9 @@
 package cn.kduck.core.web.interceptor;
 
 import cn.kduck.core.dao.datasource.DataSourceSwitch;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.web.servlet.HandlerInterceptor;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 public class DataSourceSwitchInterceptor implements HandlerInterceptor {
 

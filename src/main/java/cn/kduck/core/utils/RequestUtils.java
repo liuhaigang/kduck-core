@@ -1,8 +1,8 @@
 package cn.kduck.core.utils;
 
 import cn.kduck.core.service.ValueMap;
+import jakarta.servlet.http.HttpServletRequest;
 
-import javax.servlet.http.HttpServletRequest;
 import java.util.Iterator;
 import java.util.Map;
 

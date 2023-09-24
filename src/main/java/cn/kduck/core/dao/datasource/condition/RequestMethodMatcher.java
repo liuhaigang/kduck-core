@@ -1,8 +1,7 @@
 package cn.kduck.core.dao.datasource.condition;
 
 import cn.kduck.core.dao.datasource.DataSourceMatcher;
-
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 public class RequestMethodMatcher implements DataSourceMatcher<HttpServletRequest> {
 

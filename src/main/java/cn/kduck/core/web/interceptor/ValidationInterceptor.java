@@ -8,14 +8,14 @@ import cn.kduck.core.web.validation.ValidatorFactory;
 import cn.kduck.core.service.ValueMap;
 import cn.kduck.core.utils.RequestUtils;
 import cn.kduck.core.web.validation.ValidationException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.util.PropertyPlaceholderHelper;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerInterceptor;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import java.lang.annotation.Annotation;
 import java.util.ArrayList;
 import java.util.Iterator;

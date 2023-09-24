@@ -2,6 +2,7 @@ package cn.kduck.core.web.resolver;
 
 import cn.kduck.core.web.validation.ValidError;
 import cn.kduck.core.web.validation.ValidError.ValidErrorField;
+import jakarta.servlet.ServletRequest;
 import org.springframework.core.MethodParameter;
 import org.springframework.util.Assert;
 import org.springframework.web.bind.ServletRequestDataBinder;
@@ -9,7 +10,6 @@ import org.springframework.web.bind.WebDataBinder;
 import org.springframework.web.context.request.NativeWebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ServletModelAttributeMethodProcessor;
 
-import javax.servlet.ServletRequest;
 import java.util.List;
 
 /**
