@@ -220,7 +220,8 @@ public class DefaultService {
 
         BeanEntityDef entityDef = valueBean.getEntityDef();
 
-        if(OperateType.INSERT == type && "K_DELETE_ARCHIVE".equals(entityDef.getTableName().toUpperCase())) {
+        if(OperateType.INSERT == type && "K_DELETE_ARCHIVE".equalsIgnoreCase(entityDef.getTableName()
+        )) {
             return;
         }
 
@@ -368,7 +369,7 @@ public class DefaultService {
     }
 
     private void delete(Serializable[] ids, BeanEntityDef beanEntityDef, BeanFieldDef pkFieldDef) {
-        Map<String, Object> paramMap = ParamMap.create("ids", ids).toMap();
+        Map<String, Object> paramMap = ParamMap.createAndSet("ids", ids).toMap();
 
         DeleteBuilder deleteBuilder = new DeleteBuilder(beanEntityDef, paramMap);
         deleteBuilder.where(pkFieldDef.getFieldName(), ConditionType.IN, "ids");
@@ -512,7 +513,7 @@ public class DefaultService {
 
         Assert.notNull(fieldDef,entityDefName + "实体中不包含" + attrName + "属性。参数应当提供属性名，是否提供了数据库字段名？");
 
-        Map<String, Object> paramMap = ParamMap.create(fieldDef.getAttrName(), attrValue).toMap();
+        Map<String, Object> paramMap = ParamMap.createAndSet(fieldDef.getAttrName(), attrValue).toMap();
         SelectBuilder sqlBuilder = new SelectBuilder(entityDef,paramMap);
         sqlBuilder.where(fieldDef.getFieldName(),ConditionType.EQUALS,fieldDef.getAttrName());
 
@@ -723,7 +724,7 @@ public class DefaultService {
             return Collections.emptyList();
         }
 
-        List<R> resultList = new ArrayList(recordList.size());
+        List<R> resultList = new ArrayList<>(recordList.size());
         for (Map<String, Object> value : recordList) {
             R beanObject = bean.apply(value);
             resultList.add(beanObject);
@@ -834,8 +835,7 @@ public class DefaultService {
      * @return 实体定义对象，如果定义对象不存在则抛出异常
      */
     public final BeanEntityDef getEntityDef(String entityDefName){
-        BeanEntityDef entityDef = beanDefDepository.getEntityDef(entityDefName.toUpperCase());
-        return entityDef;
+        return beanDefDepository.getEntityDef(entityDefName.toUpperCase());
     }
 
     public final BeanFieldDef getFieldDef(BeanEntityDef beanEntityDef,String attrName){
@@ -917,7 +917,7 @@ public class DefaultService {
 
     /**
      *
-     * @param sqlObject
+     * @param sqlObject sql执行对象
      * @return 影响的记录数，返回数组是由于操作可能是批量操作
      */
     public int[] executeUpdate(SqlObject sqlObject){
