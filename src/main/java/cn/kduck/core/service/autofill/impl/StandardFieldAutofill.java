@@ -18,7 +18,7 @@ public class StandardFieldAutofill implements AutofillValue {
         Map<String, Object> valueMap = valueBean.getValueMap();
 
         if(type == FillType.ADD){
-            fillValue(valueMap,StandardField.CREATE_TIME,StandardField.CREATE_USER_ID,StandardField.CREATE_USER_NAME);
+            fillValue(valueMap,StandardField.CREATE_TIME,StandardField.MODIFY_TIME,StandardField.CREATE_USER_ID,StandardField.CREATE_USER_NAME);
         }else if(type == FillType.UPDATE){
             fillValue(valueMap, StandardField.MODIFY_TIME);
         }

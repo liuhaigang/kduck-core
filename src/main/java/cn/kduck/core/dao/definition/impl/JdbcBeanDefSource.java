@@ -187,7 +187,7 @@ public class JdbcBeanDefSource implements BeanDefSource {
                         String attrName = fieldAliasGenerator.genAlias(lookupKey,tableName,columnName);
 
                         //for oralce
-                        if(dataType == Types.NUMERIC){
+                        if(dataType == Types.NUMERIC || dataType == Types.DECIMAL){
                             dataType = digits > 0 ? Types.NUMERIC :Types.BIGINT;
                         }
 
