@@ -22,9 +22,9 @@ public class CacheConfiguration {
         private final Log logger = LogFactory.getLog(getClass());
 
         @Bean
-        public CacheExpiredHandler redisCacheManagerWrapper(StringRedisTemplate redisTemplate){
+        public CacheExpiredHandler redisCacheManagerWrapper(){
             logger.info("CacheExpiredHandler:Redis");
-            return new RedisCacheExpiredHandler(redisTemplate);
+            return new RedisCacheExpiredHandler();
         }
     }
 

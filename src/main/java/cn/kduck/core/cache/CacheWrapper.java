@@ -97,9 +97,13 @@ public class CacheWrapper implements Cache {
         if(value != null){
             jsonValue = bean2Json(value);
         }
-        cache.put(key, jsonValue);
+        /*
+            在cacheExpiredHandler中设置value，这样避免分步（先设置永久key，在为该key配置过期时间）设置导致有一定几率无法设置上过期时间。
+        */
         if(expired != null){
-            cacheExpiredHandler.doExpired(cache,key,expired);
+            cacheExpiredHandler.doExpired(cache,key,jsonValue,expired);
+        }else {
+            cache.put(key, jsonValue);
         }
     }
 

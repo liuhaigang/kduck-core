@@ -27,8 +27,9 @@ public class MapCacheExpiredHandler implements CacheExpiredHandler {
     }
 
     @Override
-    public void doExpired(Cache cache,Object key, Date expired) {
+    public void doExpired(Cache cache,Object key, Object value, Date expired) {
         synchronized (lock){
+            cache.put(key, value);
             String expiredJson = cache.get(getExpiredKey(cache), String.class);
             ConcurrentHashMap<Object,Long> expiredMap;
             if(expiredJson == null){

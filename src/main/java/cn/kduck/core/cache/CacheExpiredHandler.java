@@ -9,7 +9,7 @@ import java.util.Date;
  */
 public interface CacheExpiredHandler {
 
-    void doExpired(Cache cache,Object key, Date expired);
+    void doExpired(Cache cache,Object key, Object value, Date expired);
 
     void clearExpired(Cache cache);
 
