@@ -70,7 +70,7 @@ public class JdbcBeanDefSource implements BeanDefSource {
         if(includeTables.length == 0 && excludeTables.length == 0 ) return true;
 
         //Kduck表默认都需要扫描
-        if(tableName.startsWith("K_")) return true;
+//        if(tableName.startsWith("K_")) return true;
 
         if (match(tableName,includeTables)) return true;
 
