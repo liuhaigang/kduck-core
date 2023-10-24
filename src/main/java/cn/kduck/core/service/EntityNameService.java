@@ -6,7 +6,6 @@ import cn.kduck.core.dao.definition.BeanEntityDef;
 import cn.kduck.core.dao.definition.BeanFieldDef;
 import cn.kduck.core.dao.query.QueryCreator;
 import cn.kduck.core.dao.query.QuerySupport;
-import org.apache.commons.logging.Log;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.Serializable;
@@ -138,10 +137,6 @@ public abstract class EntityNameService {
 
     protected final BeanEntityDef getEntityDef(String entityDefName) {
         return defaultService.getEntityDef(entityDefName);
-    }
-
-    protected Log getLogger() {
-        return defaultService.getLogger();
     }
 
     protected final List<BeanFieldDef> getFieldDefList(String entityDefName) {

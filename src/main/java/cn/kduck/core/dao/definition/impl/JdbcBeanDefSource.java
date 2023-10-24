@@ -1,31 +1,17 @@
 package cn.kduck.core.dao.definition.impl;
 
-import cn.kduck.core.KduckProperties;
+import cn.kduck.core.KduckProperties.EntityDefinitionProperties;
 import cn.kduck.core.KduckProperties.ScanTablesProperties;
 import cn.kduck.core.dao.datasource.DataSourceSwitch;
 import cn.kduck.core.dao.datasource.DynamicDataSource;
-import cn.kduck.core.dao.definition.BeanEntityDef;
-import cn.kduck.core.dao.definition.BeanDefSource;
-import cn.kduck.core.dao.definition.BeanFieldDef;
-import cn.kduck.core.dao.definition.FieldAliasGenerator;
-import cn.kduck.core.dao.definition.TableAliasGenerator;
+import cn.kduck.core.dao.definition.*;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.util.Assert;
 
 import javax.sql.DataSource;
-import java.sql.Connection;
-import java.sql.DatabaseMetaData;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Types;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.sql.*;
+import java.util.*;
 
 /**
  * LiuHG
@@ -34,29 +20,21 @@ public class JdbcBeanDefSource implements BeanDefSource {
 
     private final Log logger = LogFactory.getLog(JdbcBeanDefSource.class);
 
-    @Autowired
     private DataSource dataSource;
 
-    @Autowired
-    private FieldAliasGenerator fieldAliasGenerator;
+    private FieldAliasGenerator fieldAliasGenerator = new DefaultFieldAliasGenerator();
 
-    @Autowired
-    private TableAliasGenerator tableAliasGenerator;
+    private TableAliasGenerator tableAliasGenerator = new DefaultTableAliasGenerator();
 
-//    @Value("${kduck.definition.tables.exclude:}")
-//    private String[] excludeTables;
-//
-//    @Value("${kduck.definition.tables.include:}")
-//    private String[] includeTables;
-
-    @Autowired(required = false)
     private FieldDefCorrector fieldDefCorrector;
-
-    @Autowired(required = false)
     private EntityDefCorrector entityDefCorrector;
 
-    @Autowired
-    private KduckProperties kduckProperties;
+    private EntityDefinitionProperties definitionProperties;
+
+    public JdbcBeanDefSource(DataSource dataSource, EntityDefinitionProperties definitionProperties){
+        this.dataSource = dataSource;
+        this.definitionProperties = definitionProperties;
+    }
 
     @Override
     public String getNamespace() {
@@ -64,7 +42,7 @@ public class JdbcBeanDefSource implements BeanDefSource {
     }
 
     private boolean analysisTable(String tableName){
-        ScanTablesProperties tables = kduckProperties.getDefinition().getTables();
+        ScanTablesProperties tables = definitionProperties.getTables();
         String[] includeTables = tables.getInclude();
         String[] excludeTables = tables.getExclude();
         if(includeTables.length == 0 && excludeTables.length == 0 ) return true;
@@ -262,5 +240,13 @@ public class JdbcBeanDefSource implements BeanDefSource {
             }
         }
         return false;
+    }
+
+    public void setFieldDefCorrector(FieldDefCorrector fieldDefCorrector) {
+        this.fieldDefCorrector = fieldDefCorrector;
+    }
+
+    public void setEntityDefCorrector(EntityDefCorrector entityDefCorrector) {
+        this.entityDefCorrector = entityDefCorrector;
     }
 }

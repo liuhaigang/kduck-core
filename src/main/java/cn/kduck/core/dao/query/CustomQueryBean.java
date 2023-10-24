@@ -1,15 +1,14 @@
 package cn.kduck.core.dao.query;
 
 import cn.kduck.core.dao.FieldFilter;
-import cn.kduck.core.service.ParamMap.Param;
 import cn.kduck.core.dao.SqlObject;
-import cn.kduck.core.dao.sqlbuilder.SignatureInfo;
-import cn.kduck.core.dao.utils.JdbcUtils;
 import cn.kduck.core.dao.definition.BeanFieldDef;
 import cn.kduck.core.dao.query.formater.ValueFormatter;
 import cn.kduck.core.dao.sqlbuilder.AliasField;
 import cn.kduck.core.dao.sqlbuilder.SelectBuilder.AggregateType;
 import cn.kduck.core.dao.sqlbuilder.SqlStringSplicer;
+import cn.kduck.core.dao.utils.JdbcUtils;
+import cn.kduck.core.service.ParamMap.Param;
 import org.springframework.util.StringUtils;
 
 import java.util.*;
@@ -17,7 +16,7 @@ import java.util.*;
 /**
  * LiuHG
  */
-public class CustomQueryBean implements QuerySupport, SignatureInfo {
+public class CustomQueryBean implements QuerySupport {
 
 //    private static final String PLACEHOLDER_PATTERN = "#\\{([\\w]*)\\}";
 //

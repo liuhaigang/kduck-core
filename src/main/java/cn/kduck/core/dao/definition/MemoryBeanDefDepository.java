@@ -4,7 +4,6 @@ import cn.kduck.core.dao.datasource.DataSourceSwitch;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.InitializingBean;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.Assert;
 
 import java.util.*;
@@ -12,25 +11,19 @@ import java.util.*;
 /**
  * LiuHG
  */
-public class MemoryBeanDefDepository implements InitializingBean,BeanDefDepository {
+public class MemoryBeanDefDepository implements BeanDefDepository,InitializingBean {
 
     private final Log logger = LogFactory.getLog(getClass());
 
-//    @Autowired
     public List<BeanDefSource> beanDefSourceList;
 
     private Map<String,BeanEntityDef> beanEntityDefMap =  new HashMap<>();//存储所有实体信息的Map对象
 
-    @Autowired(required = false)
-    private BeanDefConfig beanDefConfig;
-
-    @Autowired
     public MemoryBeanDefDepository(List<BeanDefSource> beanDefSourceList){
         this.beanDefSourceList = beanDefSourceList;
     }
 
-    @Override
-    public void afterPropertiesSet() throws Exception {
+    public void reloadAllEntity(){
         if(logger.isInfoEnabled()){
             logger.info("BeanDefSource:"+ Arrays.toString(beanDefSourceList.toArray()));
         }
@@ -39,9 +32,6 @@ public class MemoryBeanDefDepository implements InitializingBean,BeanDefDeposito
             List<BeanEntityDef> beanEntityDefs = source.listEntityDef();
             Assert.notNull(beanEntityDefs,"实体定义源返回的实体定义集合不能为null：" + source.getClass());
             for (BeanEntityDef entityDef : beanEntityDefs) {
-                if(beanDefConfig != null){
-                    beanDefConfig.doConfig(entityDef);
-                }
                 String entityCode = entityDef.getEntityCode().toUpperCase();
                 if(!beanEntityDefMap.containsKey(entityCode)){
                     beanEntityDefMap.put(entityCode,entityDef);
@@ -59,14 +49,6 @@ public class MemoryBeanDefDepository implements InitializingBean,BeanDefDeposito
 
         return entityDef;
     }
-
-//    private BeanEntityDef getBeanEntityDef(String entityDefName){
-//        BeanEntityDef entityDef = getEntityDef(entityDefName.toUpperCase());
-//        if(entityDef == null){
-//            throw new RuntimeException("实体定义对象不存在：" + entityDefName);
-//        }
-//        return entityDef;
-//    }
 
     public final List<BeanFieldDef> getFieldDefList(String entityDefName){
         BeanEntityDef entityDef = getEntityDef(entityDefName);
@@ -120,5 +102,10 @@ public class MemoryBeanDefDepository implements InitializingBean,BeanDefDeposito
         }else{
             return code;
         }
+    }
+
+    @Override
+    public void afterPropertiesSet() throws Exception {
+        reloadAllEntity();
     }
 }

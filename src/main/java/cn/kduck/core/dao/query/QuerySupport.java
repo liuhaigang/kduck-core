@@ -32,7 +32,13 @@ public interface QuerySupport {
      * 为查询后的字段值进行格式化
      * @param attrName 预格式化的属性名
      * @param valueFormatter 格式化器
-     * @see ValueMap#formatValue(java.lang.String, ValueFormatter)
+     * @see ValueMap#formatValue(String, ValueFormatter)
      */
     void addValueFormatter(String attrName, ValueFormatter valueFormatter);
+
+    /**
+     * 当前Query的创建者，一般用于返回创建的Query的class类名，输出到sql输出中。
+     * @return
+     */
+    String generateBy();
 }
