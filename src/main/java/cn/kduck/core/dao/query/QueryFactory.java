@@ -2,11 +2,7 @@ package cn.kduck.core.dao.query;
 
 import cn.kduck.core.dao.definition.BeanDefDepository;
 import cn.kduck.core.service.exception.QueryNotFoundException;
-import org.springframework.beans.BeansException;
-import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.ApplicationContextAware;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
@@ -18,15 +14,16 @@ import java.util.Map;
  * LiuHG
  */
 @Component
-public class QueryFactory implements ApplicationContextAware {
+public class QueryFactory {
 
-    @Autowired
     private BeanDefDepository depository;
 
-    @Autowired(required = false)
     private List<QueryCreator> queryCreatorList;
-    private ApplicationContext applicationContext;
 
+    public QueryFactory(BeanDefDepository depository,@Autowired(required = false) List<QueryCreator> queryCreatorList){
+        this.depository = depository;
+        this.queryCreatorList = queryCreatorList;
+    }
 
     public QuerySupport getQuery(String name, Map<String,Object> paramMap){
         Assert.notNull(name,"获取QueryCreator的名称不能为null");
@@ -44,11 +41,15 @@ public class QueryFactory implements ApplicationContextAware {
     }
 
     public QuerySupport getQuery(Class<? extends QueryCreator> className, Map<String,Object> paramMap){
-        QueryCreator queryCreator;
-        try{
-            queryCreator = applicationContext.getBean(className);
-        }catch (NoSuchBeanDefinitionException e){
-            throw new QueryNotFoundException("没有找到Class为" + className + "的QueryCreator",e);
+        QueryCreator queryCreator = null;
+            for (QueryCreator creator : queryCreatorList) {
+                if(creator.getClass() == className){
+                    queryCreator = creator;
+                    break;
+                }
+            }
+        if(queryCreator == null){
+            throw new RuntimeException("没有找到Class为" + className + "的QueryCreator");
         }
         QuerySupport query = queryCreator.createQuery(new HashMap(paramMap), depository);
         if(query instanceof CustomQueryBean){
@@ -58,9 +59,4 @@ public class QueryFactory implements ApplicationContextAware {
 
     }
 
-
-    @Override
-    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
-        this.applicationContext = applicationContext;
-    }
 }

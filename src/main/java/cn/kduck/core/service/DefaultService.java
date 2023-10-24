@@ -7,6 +7,9 @@ import cn.kduck.core.dao.SqlObject;
 import cn.kduck.core.dao.definition.BeanDefDepository;
 import cn.kduck.core.dao.definition.BeanEntityDef;
 import cn.kduck.core.dao.definition.BeanFieldDef;
+import cn.kduck.core.dao.definition.MemoryBeanDefDepository;
+import cn.kduck.core.dao.definition.impl.JdbcBeanDefSource;
+import cn.kduck.core.dao.dialect.DatabaseDialect;
 import cn.kduck.core.dao.id.IdGenerator;
 import cn.kduck.core.dao.id.impl.SnowFlakeGenerator;
 import cn.kduck.core.dao.id.impl.UuidGenerator;
@@ -30,10 +33,12 @@ import cn.kduck.core.service.autofill.AutofillValue;
 import cn.kduck.core.service.autofill.AutofillValue.FillType;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
+import javax.sql.DataSource;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -49,7 +54,7 @@ import java.util.function.Function;
  * @author LiuHG
  */
 @Service
-public class DefaultService {
+public class DefaultService implements InitializingBean {
 
     private final Log logger = LogFactory.getLog(getClass());
 
@@ -210,7 +215,7 @@ public class DefaultService {
         return idValues;
     }
 
-    private void addOperateObject(OperateType type,ValueBean valueBean){
+    protected void addOperateObject(OperateType type,ValueBean valueBean){
         OperateIdentification operateIdentification = OidHolder.getOperateIdentification();
 
         if(operateIdentification == null) {
@@ -373,6 +378,10 @@ public class DefaultService {
         DeleteBuilder deleteBuilder = new DeleteBuilder(beanEntityDef, paramMap);
         deleteBuilder.where(pkFieldDef.getFieldName(), ConditionType.IN, "ids");
 //        jdbcEntityDao.delete(deleteBuilder);
+
+        ValueBean valueBean = new ValueBean(beanEntityDef, paramMap, false);
+        addOperateObject(OperateType.DELETE,valueBean);
+
         jdbcEntityDao.execute(deleteBuilder.build());
     }
 
@@ -818,17 +827,6 @@ public class DefaultService {
     }
 
     /**
-     * 预留的SQL接口，用于数据写操作，但此方法未经允许不得使用，用于本类其他方法无法实现的场景、应急提供。
-     * @param sql SQL语句
-     * @param paramMap 参数值
-     * @return 影响的数据量
-     */
-    public int executeUpdate(String sql , Map<String,Object> paramMap){
-        return jdbcEntityDao.execute(sql,paramMap);
-
-    }
-
-    /**
      * 根据实体定义编码名获取实体定义对象
      * @param entityDefName 实体定义编码名
      * @return 实体定义对象，如果定义对象不存在则抛出异常
@@ -898,37 +896,29 @@ public class DefaultService {
         return queryFactory.getQuery(queryCreatorClass,paramMap);
     }
 
-    /**
-     * 获取在添加和修改方法时，对创造数据值对象(ValueBean)同时赋值时，是否严格检测属性的一一对应关系，即值对象{@link ValueMap ValueMap}中的属性必须是实体定义中的属性。
-     * @return true 严格检测，false 不检测（默认）
-     */
-    public boolean isStrict() {
-        return strict;
-    }
-
-    /**
-     * 设置在添加和修改方法时，对创造数据值对象(ValueBean)同时赋值时，是否严格检测属性的一一对应关系，即值对象{@link ValueMap ValueMap}中的属性必须是实体定义中的属性。
-     * @param strict true 严格检测，false 不检测
-     */
-    public void setStrict(boolean strict) {
-        this.strict = strict;
-    }
+//    /**
+//     * 获取在添加和修改方法时，对创造数据值对象(ValueBean)同时赋值时，是否严格检测属性的一一对应关系，即值对象{@link ValueMap ValueMap}中的属性必须是实体定义中的属性。
+//     * @return true 严格检测，false 不检测（默认）
+//     */
+//    public boolean isStrict() {
+//        return strict;
+//    }
+//
+//    /**
+//     * 设置在添加和修改方法时，对创造数据值对象(ValueBean)同时赋值时，是否严格检测属性的一一对应关系，即值对象{@link ValueMap ValueMap}中的属性必须是实体定义中的属性。
+//     * @param strict true 严格检测，false 不检测
+//     */
+//    public void setStrict(boolean strict) {
+//        this.strict = strict;
+//    }
 
     /**
      *
-     * @param sqlObject sql执行对象
+     * @param sqlObject sql执行对象，该方法不会记录审计对象，需要手动处理
      * @return 影响的记录数，返回数组是由于操作可能是批量操作
      */
     public int[] executeUpdate(SqlObject sqlObject){
         return jdbcEntityDao.execute(sqlObject);
-    }
-
-    /**
-     * 获取日志对象，便于子类日志信息记录
-     * @return 日志对象
-     */
-    public Log getLogger(){
-        return logger;
     }
 
     private void processFillValue(FillType type,ValueBean valueBean){
@@ -938,5 +928,33 @@ public class DefaultService {
         autofillValue.autofill(type,valueBean);
     }
 
+    public void setBeanDefDepository(BeanDefDepository beanDefDepository) {
+        this.beanDefDepository = beanDefDepository;
+    }
 
+    public void setJdbcEntityDao(JdbcEntityDao jdbcEntityDao) {
+        this.jdbcEntityDao = jdbcEntityDao;
+    }
+
+    public void setQueryFactory(QueryFactory queryFactory) {
+        this.queryFactory = queryFactory;
+    }
+
+    public void setIdGenerator(IdGenerator idGenerator) {
+        this.idGenerator = idGenerator;
+    }
+
+    public void setAutofillValue(AutofillValue autofillValue) {
+        this.autofillValue = autofillValue;
+    }
+
+    @Override
+    public void afterPropertiesSet() throws Exception {
+        Assert.notNull(idGenerator,"beanDefDepository不能为null");
+        Assert.notNull(jdbcEntityDao,"jdbcEntityDao不能为null");
+        Assert.notNull(idGenerator,"主键生成器idGenerator不能为null");
+        if(queryFactory == null){
+            logger.warn("queryFactory为null，不能执行QueryCreator构造的查询");
+        }
+    }
 }

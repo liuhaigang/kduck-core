@@ -15,8 +15,8 @@ public interface DeleteArchiveHandler {
     /**
      * 处理被删除的数据，需要特别处理被删除的大字段类型数据。
      * @param oid 操作标识，用于表示本次操作的唯一标识。
-     * @param entityDef 被删除的实体定义对象
+     * @param entityCode 被删除的实体定义对象编码
      * @param deletedRecords 被删除的记录集合。
      */
-    void doArchive(String oid, BeanEntityDef entityDef, List<Map<String, Object>> deletedRecords);
+    void doArchive(String oid, String entityCode, List<Map<String, Object>> deletedRecords);
 }

@@ -17,4 +17,6 @@ public interface BeanDefDepository {
     void reloadEntity(String name);
 
     Map<String,BeanEntityDef> getAllEntityDef();
+
+    void reloadAllEntity();
 }

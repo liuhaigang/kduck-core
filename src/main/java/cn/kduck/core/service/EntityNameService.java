@@ -140,10 +140,6 @@ public abstract class EntityNameService {
         return defaultService.getEntityDef(entityDefName);
     }
 
-    protected Log getLogger() {
-        return defaultService.getLogger();
-    }
-
     protected final List<BeanFieldDef> getFieldDefList(String entityDefName) {
         return defaultService.getFieldDefList(entityDefName);
     }
