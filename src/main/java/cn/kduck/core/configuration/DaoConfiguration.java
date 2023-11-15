@@ -96,7 +96,7 @@ public class DaoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean(ShowSqlLogger.class)
-    @ConditionalOnProperty(prefix = "kduck.showSql",name = "enabled",havingValue = "true")
+    @ConditionalOnProperty(prefix = "kduck.show-sql",name = "enabled",havingValue = "true")
     public ShowSqlLogger showSqlLogger(){
         return new DefaultShowSqlLogger(System.out,kduckProperties.getShowSql());
     }
