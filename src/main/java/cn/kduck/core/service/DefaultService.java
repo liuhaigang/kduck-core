@@ -953,7 +953,6 @@ public class DefaultService implements InitializingBean {
     public void afterPropertiesSet() throws Exception {
         Assert.notNull(beanDefDepository,"beanDefDepository不能为null");
         Assert.notNull(jdbcEntityDao,"jdbcEntityDao不能为null");
-        Assert.notNull(idGenerator,"主键生成器idGenerator不能为null");
         if(idGenerator == null){
             idGenerator = new KduckIdGenerator();
         }
