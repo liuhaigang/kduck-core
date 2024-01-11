@@ -8,6 +8,7 @@ import cn.kduck.core.dao.definition.BeanDefDepository;
 import cn.kduck.core.dao.definition.BeanEntityDef;
 import cn.kduck.core.dao.definition.BeanFieldDef;
 import cn.kduck.core.dao.id.IdGenerator;
+import cn.kduck.core.dao.id.impl.KduckIdGenerator;
 import cn.kduck.core.dao.id.impl.SnowFlakeGenerator;
 import cn.kduck.core.dao.id.impl.UuidGenerator;
 import cn.kduck.core.dao.query.CustomQueryBean;
@@ -946,9 +947,11 @@ public class DefaultService implements InitializingBean {
 
     @Override
     public void afterPropertiesSet() throws Exception {
-        Assert.notNull(idGenerator,"beanDefDepository不能为null");
+        Assert.notNull(beanDefDepository,"beanDefDepository不能为null");
         Assert.notNull(jdbcEntityDao,"jdbcEntityDao不能为null");
-        Assert.notNull(idGenerator,"主键生成器idGenerator不能为null");
+        if(idGenerator == null){
+            idGenerator = new KduckIdGenerator();
+        }
         if(queryFactory == null){
             logger.warn("queryFactory为null，不能执行QueryCreator构造的查询");
         }
