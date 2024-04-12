@@ -7,9 +7,12 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
 import java.io.Serializable;
+import java.net.Inet4Address;
 import java.net.InetAddress;
-import java.net.UnknownHostException;
+import java.net.NetworkInterface;
+import java.net.SocketException;
 import java.util.Arrays;
+import java.util.Enumeration;
 import java.util.concurrent.TimeUnit;
 
 public class KduckIdGenerator implements IdGenerator {
@@ -68,13 +71,7 @@ public class KduckIdGenerator implements IdGenerator {
         this.reginValue = reginAllocator.allot(ip);
 
         if(ip == null || ip.length() == 0){
-            InetAddress ipv4Address;
-            try {
-                ipv4Address = InetAddress.getLocalHost();
-            } catch (UnknownHostException e) {
-                throw new RuntimeException("初始化生成器错误，我发获取指定主机的IP地址",e);
-            }
-            byte[] address = ipv4Address.getAddress();
+            byte[] address = getLocalIpAddress();
 
             for(int i = 0 ; i < ipAddress.length ; i++){
                 ipAddress[i] = address[i] & 0xff;
@@ -93,6 +90,30 @@ public class KduckIdGenerator implements IdGenerator {
             logger.info("基于IP的主键生成器，提取的IP地址为：" + ipStr);
         }
 
+    }
+
+    public byte[] getLocalIpAddress() {
+        try {
+            Enumeration<NetworkInterface> networkInterfaces = NetworkInterface.getNetworkInterfaces();
+            while (networkInterfaces.hasMoreElements()) {
+                NetworkInterface ni = networkInterfaces.nextElement();
+                if (!ni.isUp() || ni.isLoopback() || ni.isVirtual()) {
+                    continue;
+                }
+
+                Enumeration<InetAddress> inetAddresses = ni.getInetAddresses();
+                while (inetAddresses.hasMoreElements()) {
+                    InetAddress address = inetAddresses.nextElement();
+                    if (!address.isLinkLocalAddress() && address instanceof Inet4Address) {
+                        return address.getAddress();
+                    }
+                }
+            }
+        } catch (SocketException e) {
+            throw new RuntimeException("初始化生成器错误，无法获取指定主机的IP地址", e);
+        }
+
+        return null; // 如果没有找到有效的IPv4地址，则返回null
     }
 
     @Override
