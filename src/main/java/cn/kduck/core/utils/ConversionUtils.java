@@ -12,8 +12,7 @@ import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.EnumMap;
 
 /**
  * LiuHG
@@ -122,9 +121,9 @@ public final class ConversionUtils {
             }
         }
 
-        private class DateFormatContainer {
+        private static class DateFormatContainer {
 
-            private Map<DateFormatType,DateFormat> dateFormatMap = new HashMap();
+            private EnumMap<DateFormatType,DateFormat> dateFormatMap = new EnumMap(DateFormatType.class);
 
             public DateFormatContainer(){
                 dateFormatMap.put(DateFormatType.DATE_FORMAT_HMS,new SimpleDateFormat("HH:mm:ss"));
