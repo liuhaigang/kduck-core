@@ -205,6 +205,7 @@ public class RemoteServiceProxy implements FactoryBean,ApplicationContextAware, 
                     }
                     if(split[0].equals(clientPrefix)){
                         servicePath = split[1];
+                        break;
                     }
                 }
             }

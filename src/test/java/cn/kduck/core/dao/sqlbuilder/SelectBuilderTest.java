@@ -371,7 +371,7 @@ public class SelectBuilderTest {
         sqlBuiler.bindAggregate("a.USER_NAME",AggregateType.COUNT);
         sqlBuiler.from("a",userEntityDef).innerJoin("b",orgUserEntityDef)
                 .where().and("a.USER_NAME", ConditionType.CONTAINS,"userName").groupBy("a.GENDER","a.USER_NAME")
-                .having().and("a.GENDER",ConditionType.EQUALS,"gender").orderBy().asc("a.USER_NAME");
+                .having().and(AggregateType.COUNT,"a.GENDER",ConditionType.EQUALS,"gender").orderBy().asc("a.USER_NAME");
 
         printSql("分组查询查询",sqlBuiler);
     }
