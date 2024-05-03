@@ -205,18 +205,22 @@ public class JdbcEntityDao {
             this.sql = sqlObject.getSql();
             this.paramValueList = sqlObject.getParamValueList();
             this.returnKey = returnKey;
-            Assert.isTrue(paramValueList != null && !paramValueList.isEmpty(),"参数列表不能为空");
-            Object value = paramValueList.get(0);
-            paramArray = value != null && value.getClass().isArray();
-            if(paramArray){
-                for (Object o : paramValueList) {
-                    if(o.getClass() != value.getClass()){
-                        paramArray = false;
-                        break;
+            //            Assert.isTrue(paramValueList != null && !paramValueList.isEmpty(),"参数列表不能为空");
+            if(paramValueList.size() > 0){
+                Object value = paramValueList.get(0);
+                paramArray = value != null && value.getClass().isArray();
+                if(paramArray){
+                    for (Object o : paramValueList) {
+                        if(o.getClass() != value.getClass()){
+                            paramArray = false;
+                            break;
+                        }
                     }
                 }
+                isBatch = paramArray && paramValueList.size() > 1;
+            }else{
+                isBatch = false;
             }
-            isBatch = paramArray && paramValueList.size() > 1;
         }
 
         @Override
