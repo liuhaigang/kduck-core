@@ -6,7 +6,7 @@
 
     <groupId>cn.kduck</groupId>
     <artifactId>kduck-core</artifactId>
-    <version>1.1.6</version>
+    <version>1.1.7</version>
     <name>kduck-core</name>
     <description>The core of the K-Duck development framework encompasses all the featured components of the framework.</description>
     <licenses>
@@ -131,19 +131,19 @@
             </plugin>
 
             <!-- GPG -->
-<!--           <plugin>-->
-<!--                <groupId>org.apache.maven.plugins</groupId>-->
-<!--                <artifactId>maven-gpg-plugin</artifactId>-->
-<!--                <version>1.6</version>-->
-<!--                <executions>-->
-<!--                    <execution>-->
-<!--                        <phase>verify</phase>-->
-<!--                        <goals>-->
-<!--                            <goal>sign</goal>-->
-<!--                        </goals>-->
-<!--                    </execution>-->
-<!--                </executions>-->
-<!--            </plugin>-->
+           <!--<plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-gpg-plugin</artifactId>
+                <version>1.6</version>
+                <executions>
+                    <execution>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>sign</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>-->
         </plugins>
     </build>
 
