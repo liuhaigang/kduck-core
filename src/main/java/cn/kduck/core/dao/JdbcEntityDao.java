@@ -41,17 +41,12 @@ import org.springframework.jdbc.support.lob.LobHandler;
 import org.springframework.util.Assert;
 
 import javax.sql.DataSource;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.sql.Types;
+import java.sql.*;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.*;
+import java.util.Date;
 
 /**
  * @author LiuHG
@@ -401,14 +396,27 @@ public class JdbcEntityDao {
                 }
 //                Object resultValue = JdbcUtils.getResultSetValue(resultSet, i + 1, fieldDef.getJavaType());
 
-                Object resultValue;
+                Object resultValue = null;
                 if(fieldDef.getJdbcType() == Types.CLOB || fieldDef.getJdbcType() == Types.NCLOB || fieldDef.getJdbcType() == Types.LONGVARCHAR || fieldDef.getJdbcType() == Types.LONGNVARCHAR){
                     //处理lob字段转换为String
                     resultValue = lobHandler.getClobAsString(resultSet, i + 1);
                 }else if(fieldDef.getJdbcType() == Types.BLOB || fieldDef.getJdbcType() == Types.LONGVARBINARY || fieldDef.getJdbcType() == Types.VARBINARY || fieldDef.getJdbcType() == Types.BINARY){
                     //处理lob字段转换为byte[]
                     resultValue = lobHandler.getBlobAsBytes(resultSet, i + 1);
+                } else if(fieldDef.getJdbcType() == Types.TIMESTAMP){
+                    Timestamp timestamp = resultSet.getTimestamp(i + 1);
+                    if(timestamp != null){
+                        resultValue = new Date(timestamp.getTime());
+                    }
+                } else if(fieldDef.getJdbcType() == Types.DATE){
+                    Date date = resultSet.getDate(i + 1);
+                    if(date != null){
+                        resultValue = new Date(date.getTime());
+                    }
                 }else{
+
+
+
                     resultValue = JdbcUtils.getResultSetValue(resultSet, i + 1, fieldDef.getJavaType());
                 }
 
