@@ -390,40 +390,38 @@ public class JdbcEntityDao {
                 String columnName = metaData.getColumnName(i + 1);
                 String columnLabel = metaData.getColumnLabel(i + 1);
                 BeanFieldDef fieldDef = BeanDefUtils.getByColName(fieldDefList, columnName);
-                if(fieldDef == null){
-//                    throw new RuntimeException("在提供的字段定义集合中未找到指定列的字段定义：" + columnName);
-                    continue;
-                }
-//                Object resultValue = JdbcUtils.getResultSetValue(resultSet, i + 1, fieldDef.getJavaType());
 
+                String attrName;
                 Object resultValue = null;
-                if(fieldDef.getJdbcType() == Types.CLOB || fieldDef.getJdbcType() == Types.NCLOB || fieldDef.getJdbcType() == Types.LONGVARCHAR || fieldDef.getJdbcType() == Types.LONGNVARCHAR){
-                    //处理lob字段转换为String
-                    resultValue = lobHandler.getClobAsString(resultSet, i + 1);
-                }else if(fieldDef.getJdbcType() == Types.BLOB || fieldDef.getJdbcType() == Types.LONGVARBINARY || fieldDef.getJdbcType() == Types.VARBINARY || fieldDef.getJdbcType() == Types.BINARY){
-                    //处理lob字段转换为byte[]
-                    resultValue = lobHandler.getBlobAsBytes(resultSet, i + 1);
-                } else if(fieldDef.getJdbcType() == Types.TIMESTAMP){
-                    Timestamp timestamp = resultSet.getTimestamp(i + 1);
-                    if(timestamp != null){
-                        resultValue = new Date(timestamp.getTime());
+                if(fieldDef != null){
+                    if(fieldDef.getJdbcType() == Types.CLOB || fieldDef.getJdbcType() == Types.NCLOB || fieldDef.getJdbcType() == Types.LONGVARCHAR || fieldDef.getJdbcType() == Types.LONGNVARCHAR){
+                        //处理lob字段转换为String
+                        resultValue = lobHandler.getClobAsString(resultSet, i + 1);
+                    }else if(fieldDef.getJdbcType() == Types.BLOB || fieldDef.getJdbcType() == Types.LONGVARBINARY || fieldDef.getJdbcType() == Types.VARBINARY || fieldDef.getJdbcType() == Types.BINARY){
+                        //处理lob字段转换为byte[]
+                        resultValue = lobHandler.getBlobAsBytes(resultSet, i + 1);
+                    } else if(fieldDef.getJdbcType() == Types.TIMESTAMP){
+                        Timestamp timestamp = resultSet.getTimestamp(i + 1);
+                        if(timestamp != null){
+                            resultValue = new Date(timestamp.getTime());
+                        }
+                    } else if(fieldDef.getJdbcType() == Types.DATE){
+                        Date date = resultSet.getDate(i + 1);
+                        if(date != null){
+                            resultValue = new Date(date.getTime());
+                        }
+                    }else{
+                        resultValue = JdbcUtils.getResultSetValue(resultSet, i + 1, fieldDef.getJavaType());
                     }
-                } else if(fieldDef.getJdbcType() == Types.DATE){
-                    Date date = resultSet.getDate(i + 1);
-                    if(date != null){
-                        resultValue = new Date(date.getTime());
+                    attrName = fieldDef.getAttrName();
+                    if(!columnLabel.equals(columnName)){
+                        attrName = columnLabel;
                     }
-                }else{
-
-
-
-                    resultValue = JdbcUtils.getResultSetValue(resultSet, i + 1, fieldDef.getJavaType());
-                }
-
-                String attrName = fieldDef.getAttrName();
-                if(!columnLabel.equals(columnName)){
+                } else {
                     attrName = columnLabel;
+                    resultValue = JdbcUtils.getResultSetValue(resultSet, i + 1);
                 }
+
                 recordMap.put(attrName, processIdtoString(attrName,resultValue));
             }
 

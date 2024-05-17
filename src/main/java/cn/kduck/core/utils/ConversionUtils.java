@@ -13,8 +13,6 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.EnumMap;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * LiuHG
@@ -36,12 +34,30 @@ public final class ConversionUtils {
         genericConversionService.addConverter(new DateConverter());
         genericConversionService.addConverter(new Boolean2IntegerConverter());
         genericConversionService.addConverter(new Integer2BooleanConverter());
+        genericConversionService.addConverter(new Boolean2LongConverter());
+        genericConversionService.addConverter(new Long2BooleanConverter());
         genericConversionService.addConverter(new ReaderConverter());
 
     }
 
     public static <T> T convert(Object source, Class<T> targetType){
         return conversionService.convert(source,targetType);
+    }
+
+    public static class Boolean2LongConverter implements Converter<Boolean, Long>{
+        @Override
+        public Long convert(Boolean source) {
+            if(source == null) return 0L;
+            return source.booleanValue() ? 1L : 0L;
+        }
+    }
+
+    public static class Long2BooleanConverter implements Converter<Long,Boolean>{
+        @Override
+        public Boolean convert(Long source) {
+            if(source == null) return false;
+            return source.intValue() > 0L ? true : false;
+        }
     }
 
     public static class Boolean2IntegerConverter implements Converter<Boolean, Integer>{
