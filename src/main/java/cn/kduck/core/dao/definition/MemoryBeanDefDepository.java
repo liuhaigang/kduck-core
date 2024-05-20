@@ -17,6 +17,8 @@ public class MemoryBeanDefDepository implements BeanDefDepository,InitializingBe
 
     public List<BeanDefSource> beanDefSourceList;
 
+    private TableAliasGenerator tableAliasGenerator = new DefaultTableAliasGenerator();
+
     private Map<String,BeanEntityDef> beanEntityDefMap =  new HashMap<>();//存储所有实体信息的Map对象
 
     public MemoryBeanDefDepository(List<BeanDefSource> beanDefSourceList){
@@ -63,10 +65,11 @@ public class MemoryBeanDefDepository implements BeanDefDepository,InitializingBe
 
     //TODO 暂不能处理刷新删除的实体
     @Override
-    public void reloadEntity(String entityCode) {
-        entityCode = formatEntityCode(entityCode);
+    public void reloadEntity(String tableName) {
+        tableName = formatEntityCode(tableName);
+        String entityCode = tableAliasGenerator.genAlias(tableName);
         for (BeanDefSource source : beanDefSourceList) {
-            BeanEntityDef beanEntityDef1 = source.reloadEntity(entityCode);
+            BeanEntityDef beanEntityDef1 = source.reloadEntity(tableName);
             if(beanEntityDef1 == null) continue;
             beanEntityDefMap.put(entityCode,beanEntityDef1);
 
