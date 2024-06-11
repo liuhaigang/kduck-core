@@ -163,6 +163,7 @@ public class KduckProperties {
 
         private boolean enabled;
         private ShowSqlMode mode = ShowSqlMode.SQL;
+        private long slowThreshold = 500;
 
         public boolean isEnabled() {
             return enabled;
@@ -178,6 +179,14 @@ public class KduckProperties {
 
         public void setMode(ShowSqlMode mode) {
             this.mode = mode;
+        }
+
+        public long getSlowThreshold() {
+            return slowThreshold;
+        }
+
+        public void setSlowThreshold(long slowThreshold) {
+            this.slowThreshold = slowThreshold;
         }
     }
 

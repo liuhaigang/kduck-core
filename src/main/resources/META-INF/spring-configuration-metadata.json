@@ -150,6 +150,12 @@
       "sourceType": "cn.kduck.core.KduckProperties$ShowSqlProperties"
     },
     {
+      "name": "kduck.show-sql.slow-threshold",
+      "type": "java.lang.Long",
+      "description": "判定是否为慢SQL的阈值，单位：毫秒。默认为500。",
+      "sourceType": "cn.kduck.core.KduckProperties$ShowSqlProperties"
+    },
+    {
       "name": "management.endpoint.proxy.cache.time-to-live",
       "type": "java.time.Duration",
       "description": "Maximum time that a response can be cached.",
@@ -176,7 +182,7 @@
           "description": "显示执行的SQL及参数信息以及执行的时间，此种模式会在SQL执行后输出。"
         },{
           "value": "JUST_SLOW_SQL",
-          "description": "仅显示慢SQL及参数信息（超过500ms），此种模式会在SQL执行后输出。"
+          "description": "仅显示慢SQL及参数信息，此种模式会在SQL执行后输出。"
         },{
           "value": "SQL_ON_ERROR",
           "description": "仅当执行数据库操作异常的时候输出SQL。"
