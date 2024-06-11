@@ -23,9 +23,6 @@ public class DefaultShowSqlLogger implements ShowSqlLogger {
     private final ShowSqlProperties showSqlProperties;
     private ObjectMapper jsonMapper = new ObjectMapper();
 
-    //慢sql的输出阈值，500毫秒
-    public static final int SLOW_SQL_MILLISECOND_THRESHOLD = 500;
-
     public DefaultShowSqlLogger(PrintStream writer, ShowSqlProperties showSqlProperties){
         this.writer = writer;
         this.showSqlProperties = showSqlProperties;
@@ -49,7 +46,7 @@ public class DefaultShowSqlLogger implements ShowSqlLogger {
     protected void printSql(long time, String sql, List<Object> paramList,String generateBy,boolean violate){
         if(showSqlProperties != null
                 && showSqlProperties.getMode() == ShowSqlMode.JUST_SLOW_SQL
-                && time < SLOW_SQL_MILLISECOND_THRESHOLD){
+                && time < showSqlProperties.getSlowThreshold()){
             //如果开启慢sql日志，则如果未达到阈值则直接返回。
             return;
         }
@@ -76,7 +73,7 @@ public class DefaultShowSqlLogger implements ShowSqlLogger {
 
         String spendTime = "";
         if(time >= 0 ){
-            AnsiElement color = time >= SLOW_SQL_MILLISECOND_THRESHOLD ? AnsiColor.RED:AnsiColor.YELLOW;
+            AnsiElement color = time >= showSqlProperties.getSlowThreshold() ? AnsiColor.RED:AnsiColor.YELLOW;
             spendTime = AnsiOutput.toString(color,"(" + time + "ms)");
         }
 
