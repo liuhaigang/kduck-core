@@ -152,7 +152,7 @@ public class JdbcEntityDao {
 
 
         //如果输出sql模式为显示执行时间，则仅能在操作后输出sql
-        if (showSqlMode == ShowSqlMode.TIME_SQL) {
+        if (showSqlMode == ShowSqlMode.TIME_SQL || showSqlMode == ShowSqlMode.JUST_SLOW_SQL) {
             long endTime = System.currentTimeMillis();
             sqlLogger.timeSqlLog((endTime-startTime),sqlObject.getSql(), sqlObject.getParamValueList());
         }
@@ -329,7 +329,7 @@ public class JdbcEntityDao {
         }
 
 
-        if (showSqlMode == ShowSqlMode.TIME_SQL) {
+        if (showSqlMode == ShowSqlMode.TIME_SQL || showSqlMode == ShowSqlMode.JUST_SLOW_SQL) {
             long endTime = System.currentTimeMillis();
             sqlLogger.timeSqlLog((endTime-startTime),sql, paramList,queryBean.generateBy());
         }
@@ -496,7 +496,7 @@ public class JdbcEntityDao {
         }
 
 
-        if (showSqlMode == ShowSqlMode.TIME_SQL ||  showSqlMode == ShowSqlMode.SQL_ON_ERROR) {
+        if (showSqlMode == ShowSqlMode.TIME_SQL ||  showSqlMode == ShowSqlMode.JUST_SLOW_SQL) {
             long endTime = System.currentTimeMillis();
             sqlLogger.timeSqlLog((endTime-startTime),countSql, paramList,queryBean.generateBy());
         }
@@ -558,7 +558,7 @@ public class JdbcEntityDao {
             throw e;
         }
 
-        if (showSqlMode == ShowSqlMode.TIME_SQL) {
+        if (showSqlMode == ShowSqlMode.TIME_SQL || showSqlMode == ShowSqlMode.JUST_SLOW_SQL) {
             long endTime = System.currentTimeMillis();
             sqlLogger.timeSqlLog((endTime-startTime),sql, valueList,null,true);
         }
