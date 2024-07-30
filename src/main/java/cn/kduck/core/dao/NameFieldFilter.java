@@ -32,7 +32,7 @@ public class NameFieldFilter implements FieldFilter{
         }
 
         if(filedList.isEmpty()){
-            Object[] values = fieldList.toArray(new String[0]);
+            Object[] values = fieldList.toArray(new AliasField[0]);
             throw new RuntimeException("没有匹配任何可用字段，请检查属性名拼写是否正确："+ Arrays.toString(values));
         }
 
