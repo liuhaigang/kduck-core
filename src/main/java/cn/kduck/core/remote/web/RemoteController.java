@@ -2,6 +2,7 @@ package cn.kduck.core.remote.web;
 
 import cn.kduck.core.remote.service.RemoteServiceDepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.type.CollectionType;
 import org.springframework.util.Assert;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -11,7 +12,10 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
 import java.lang.reflect.Method;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -48,7 +52,7 @@ public class RemoteController {
             throw new RuntimeException("在" + serviceObject.getClass() + "中没有匹配的方法"+remoteMethod.getMethodName());
         }
 
-        Class<?>[] parameterTypes = method.getParameterTypes();//接口方法参数类型列表
+        Type[] parameterTypes = method.getGenericParameterTypes();//接口方法参数类型列表
         Object[] paramJsons = remoteMethod.getParams();//远程传递的接口方法参数json
         Object[] args = new Object[parameterTypes.length];//接口参数
         for (int i = 0; i < args.length; i++) {
@@ -58,27 +62,45 @@ public class RemoteController {
                 continue;
             }
 
-            Class componentType = parameterTypes[i];
-            boolean isArray = false;
-            if(parameterTypes[i].isArray()){
-                componentType = parameterTypes[i].getComponentType();
-                isArray = true;
-            }
-
-            if(componentType.isInterface()){
-                if(isArray){
-                    parameterTypes[i] = String[].class;
-                }else{
-                    parameterTypes[i] = paramJsons[i].getClass();
+            if(parameterTypes[i] instanceof Class){
+                Class valueType = (Class)parameterTypes[i];
+                boolean isArray = false;
+                if(valueType.isArray()){
+                    valueType = valueType.getComponentType();
+                    isArray = true;
                 }
 
-            }
+                if(valueType.isInterface()){
+                    if(isArray){
+                        valueType = String[].class;
+                    }else{
+                        valueType = paramJsons[i].getClass();
+                    }
+                }
 
-            try {
-                Object obj = objectMapper.readValue(paramJsons[i].toString(), parameterTypes[i]);
-                args[i] = obj;
-            } catch (IOException e) {
-                e.printStackTrace();
+                try {
+                    Object obj = objectMapper.readValue(paramJsons[i].toString(), valueType);
+                    args[i] = obj;
+                } catch (IOException e) {
+                    throw new RuntimeException("处理远程接口参数时发生错误：valueType=" + valueType + ",paramJsons=" + paramJsons[i],e);
+                }
+            }else if(parameterTypes[i] instanceof ParameterizedType){
+                ParameterizedType parameterizedType = (ParameterizedType) parameterTypes[i];
+                Class rawType = (Class)parameterizedType.getRawType();
+                try {
+                    if(List.class.isAssignableFrom(rawType)){
+                        Type[] actualTypeArguments = parameterizedType.getActualTypeArguments();
+
+                        CollectionType collectionType = objectMapper.getTypeFactory().constructCollectionType(List.class, (Class)actualTypeArguments[0]);
+                        Object obj = objectMapper.readValue(paramJsons[i].toString(), collectionType);
+                        args[i] = obj;
+                    } else {
+                        Object obj = objectMapper.readValue(paramJsons[i].toString(), rawType);
+                        args[i] = obj;
+                    }
+                } catch (IOException e) {
+                    throw new RuntimeException("处理远程接口参数时发生错误：valueType=" + rawType + ",paramJsons=" + paramJsons[i],e);
+                }
             }
         }
 
