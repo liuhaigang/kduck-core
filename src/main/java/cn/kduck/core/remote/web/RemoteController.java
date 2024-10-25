@@ -1,5 +1,6 @@
 package cn.kduck.core.remote.web;
 
+import cn.kduck.core.remote.annotation.ProxyParam;
 import cn.kduck.core.remote.service.RemoteServiceDepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.type.CollectionType;
@@ -11,9 +12,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
-import java.lang.reflect.Method;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
+import java.lang.reflect.*;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -53,6 +52,8 @@ public class RemoteController {
         }
 
         Type[] parameterTypes = method.getGenericParameterTypes();//接口方法参数类型列表
+        Parameter[] parameters = method.getParameters();
+
         Object[] paramJsons = remoteMethod.getParams();//远程传递的接口方法参数json
         Object[] args = new Object[parameterTypes.length];//接口参数
         for (int i = 0; i < args.length; i++) {
@@ -63,20 +64,7 @@ public class RemoteController {
             }
 
             if(parameterTypes[i] instanceof Class){
-                Class valueType = (Class)parameterTypes[i];
-                boolean isArray = false;
-                if(valueType.isArray()){
-                    valueType = valueType.getComponentType();
-                    isArray = true;
-                }
-
-                if(valueType.isInterface()){
-                    if(isArray){
-                        valueType = String[].class;
-                    }else{
-                        valueType = paramJsons[i].getClass();
-                    }
-                }
+                Class valueType = getComponentTypeClass(parameterTypes[i], parameters[i]);
 
                 try {
                     Object obj = objectMapper.readValue(paramJsons[i].toString(), valueType);
@@ -91,7 +79,9 @@ public class RemoteController {
                     if(List.class.isAssignableFrom(rawType)){
                         Type[] actualTypeArguments = parameterizedType.getActualTypeArguments();
 
-                        CollectionType collectionType = objectMapper.getTypeFactory().constructCollectionType(List.class, (Class)actualTypeArguments[0]);
+                        Class componentTypeClass = getComponentTypeClass(actualTypeArguments[0], parameters[i]);
+
+                        CollectionType collectionType = objectMapper.getTypeFactory().constructCollectionType(List.class, componentTypeClass);
                         Object obj = objectMapper.readValue(paramJsons[i].toString(), collectionType);
                         args[i] = obj;
                     } else {
@@ -111,6 +101,28 @@ public class RemoteController {
         }
     }
 
+    private Class getComponentTypeClass(Type parameterType,Parameter parameter) {
+        Class valueType = (Class) parameterType;
+        boolean isArray = false;
+        Class componentType = valueType;
+        if(valueType.isArray()){
+            componentType = valueType.getComponentType();
+            isArray = true;
+        }
+
+        if(componentType.isInterface()){
+            ProxyParam proxyParam = parameter.getAnnotation(ProxyParam.class);
+            if(proxyParam != null){
+                componentType = proxyParam.type();
+            }
+            //如果proxyParam.type()任然为接口，抛异常
+            if(componentType.isInterface()  && componentType != List.class && componentType != Map.class){
+                throw new RuntimeException("远程接口参数不允许使用非List或Map之外的接口定义，请考虑使用@ProxyParam注解指定具体的实现类");
+            }
+            valueType = isArray ? Array.newInstance(componentType, 0).getClass() : componentType;
+        }
+        return valueType;
+    }
 
     private String methodName(Method method){
         StringBuilder methodNameBuilder = new StringBuilder(method.getName());

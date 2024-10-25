@@ -1,6 +1,7 @@
 package cn.kduck.core.dao.definition;
 
 import cn.kduck.core.dao.datasource.DataSourceSwitch;
+import cn.kduck.core.dao.exception.EntityDefNotFoundException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.InitializingBean;
@@ -46,7 +47,7 @@ public class MemoryBeanDefDepository implements BeanDefDepository,InitializingBe
         name = formatEntityCode(name);
         BeanEntityDef entityDef = beanEntityDefMap.get(name.toUpperCase());
         if(entityDef == null){
-            throw new RuntimeException("指定名称的实体定义对象不存在：" + name);
+            throw new EntityDefNotFoundException("指定名称的实体定义对象不存在：" + name);
         }
 
         return entityDef;
