@@ -532,6 +532,11 @@ public class SelectBuilder {
                         String[] joinAttrName = joinOn.getJoinAttrName();
                         //判断是否为join表的关联字段，如果是且主外键关联的属性名一致，则从查询返回字段列表中删除外键字段，避免重名冲突
                         if(name.equals(rightAlias) && joinAttrName[0].equals(joinAttrName[1])){
+                            //如果为关联的字段设置了别名，则不删除外键字段
+                            BeanFieldDef fieldDef = joinOn.getRightEntityDef().getFieldDef(joinAttrName[0]);
+                            if(aliasFieldMap.containsKey(rightAlias + "." + fieldDef.getFieldName())){
+                                continue;
+                            }
 
                             boolean leftHasField = false;
                             List<AliasField> leftAliasFields = fieldMap.get(joinOn.getLeftAlias());

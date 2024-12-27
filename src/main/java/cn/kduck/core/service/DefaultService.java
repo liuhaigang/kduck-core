@@ -7,6 +7,7 @@ import cn.kduck.core.dao.SqlObject;
 import cn.kduck.core.dao.definition.BeanDefDepository;
 import cn.kduck.core.dao.definition.BeanEntityDef;
 import cn.kduck.core.dao.definition.BeanFieldDef;
+import cn.kduck.core.dao.exception.TooManyResultsException;
 import cn.kduck.core.dao.id.IdGenerator;
 import cn.kduck.core.dao.id.impl.KduckIdGenerator;
 import cn.kduck.core.dao.id.impl.SnowFlakeGenerator;
@@ -618,7 +619,7 @@ public class DefaultService implements InitializingBean {
     public ValueMap get(QuerySupport queryBean, FieldFilter filter){
         ValueMapList list = list(queryBean, new Page(false),filter);//此处设置new Page()按照分页查询，是避免查询出大批量数据。
         if(list.size() > 1){
-            throw new RuntimeException("要求最多返回1条记录，当前返回了多条数据："+list.size());
+            throw new TooManyResultsException("要求最多返回1条记录，当前返回了多条数据："+list.size());
         }
         if(list.isEmpty()){
             return null;
