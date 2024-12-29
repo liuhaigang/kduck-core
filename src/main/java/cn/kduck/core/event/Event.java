@@ -12,7 +12,7 @@ public class Event<T> implements Serializable {
 
     public Event(String code,T eventObject){
         this.code = code;
-        this.type = EventType.NONE;
+        this.type = EventTypeEnum.NONE;
         this.eventObject = eventObject;
     }
 
@@ -38,8 +38,12 @@ public class Event<T> implements Serializable {
         return eventObject;
     }
 
-    public enum EventType {
+    public enum EventTypeEnum implements EventType{
         ADD,UPDATE,DELETE,GET,LIST,NONE;
+    }
+
+    public interface EventType {
+
     }
 
 //    public static class EventMessage<T> implements Serializable {
