@@ -259,6 +259,15 @@ public class JdbcEntityDao {
     }
 
     public List<Map<String,Object>> executeQuery(QuerySupport queryBean, int firstIndex, int maxRow, FieldFilter filter){
+        return executeQuery(queryBean,firstIndex,maxRow,filter,null);
+    }
+
+    public void executeQuery(QuerySupport queryBean, FieldFilter filter, BatchDataCallbackHandler batchDataCallbackHandler){
+        executeQuery(queryBean,-1,-1,filter, batchDataCallbackHandler);
+    }
+
+    private List<Map<String,Object>> executeQuery(QuerySupport queryBean, int firstIndex, int maxRow, FieldFilter filter,
+                                                 BatchDataCallbackHandler batchDataCallbackHandler){
         SqlObject sqlObject = queryBean.getQuery(filter);
         Map<String, ValueFormatter> valueFormaters = queryBean.getValueFormater();
 
@@ -294,6 +303,17 @@ public class JdbcEntityDao {
                         }
                     }
                     recordMapList.add(recordMap);
+                    if(batchDataCallbackHandler != null && recordMapList.size() == batchDataCallbackHandler.batchSize()){
+                        Map[] recordMapArray = recordMapList.stream().toArray(LinkedHashMap[]::new);
+                        batchDataCallbackHandler.processBatchData(recordMapArray);
+                        recordMapList.clear();
+                    }
+                }
+
+                if(batchDataCallbackHandler != null && !recordMapList.isEmpty()){
+                    Map[] recordMapArray = recordMapList.stream().toArray(LinkedHashMap[]::new);
+                    batchDataCallbackHandler.processBatchData(recordMapArray);
+                    recordMapList.clear();
                 }
                 return recordMapList;
             }, paramList.toArray());
