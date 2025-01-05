@@ -94,7 +94,7 @@ public class KduckIdGenerator implements IdGenerator {
             Enumeration<NetworkInterface> networkInterfaces = NetworkInterface.getNetworkInterfaces();
             while (networkInterfaces.hasMoreElements()) {
                 NetworkInterface ni = networkInterfaces.nextElement();
-                if (!ni.isUp() || ni.isLoopback() || ni.isVirtual()) {
+                if (!ni.isUp() || ni.isLoopback() || ni.isVirtual() || ni.isPointToPoint()) {
                     continue;
                 }
 
