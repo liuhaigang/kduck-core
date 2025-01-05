@@ -1,9 +1,6 @@
 package cn.kduck.core.dao;
 
-import cn.kduck.core.KduckProperties;
 import cn.kduck.core.KduckProperties.ShowSqlMode;
-import cn.kduck.core.KduckProperties.ShowSqlProperties;
-import cn.kduck.core.dao.datasource.DataSourceSwitch;
 import cn.kduck.core.dao.definition.*;
 import cn.kduck.core.dao.dialect.DatabaseDialect;
 import cn.kduck.core.dao.query.QuerySupport;
@@ -12,20 +9,7 @@ import cn.kduck.core.dao.sqllog.ShowSqlLogger;
 import cn.kduck.core.dao.sqllog.impl.EmptyShowSqlLogger;
 import cn.kduck.core.dao.utils.TypeUtils;
 import cn.kduck.core.utils.BeanDefUtils;
-import cn.kduck.core.utils.SpringBeanUtils;
 import cn.kduck.core.web.interceptor.OperateIdentificationInterceptor.OidHolder;
-import cn.kduck.core.web.interceptor.OperateIdentificationInterceptor.OperateIdentification;
-import cn.kduck.core.web.interceptor.operateinfo.OperateObject;
-import cn.kduck.core.web.interceptor.operateinfo.OperateObject.OperateType;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.beans.factory.InitializingBean;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.ansi.AnsiColor;
-import org.springframework.boot.ansi.AnsiElement;
-import org.springframework.boot.ansi.AnsiOutput;
-import org.springframework.boot.ansi.AnsiStyle;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.jdbc.core.ArgumentPreparedStatementSetter;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.ColumnMapRowMapper;
@@ -38,7 +22,6 @@ import org.springframework.jdbc.core.StatementCreatorUtils;
 import org.springframework.jdbc.support.JdbcUtils;
 import org.springframework.jdbc.support.lob.DefaultLobHandler;
 import org.springframework.jdbc.support.lob.LobHandler;
-import org.springframework.util.Assert;
 
 import javax.sql.DataSource;
 import java.sql.*;
@@ -283,8 +266,17 @@ public class JdbcEntityDao {
     }
 
     public List<Map<String,Object>> executeQuery(QuerySupport queryBean, int firstIndex, int maxRow, FieldFilter filter){
+        return executeQuery(queryBean,firstIndex,maxRow,filter,null);
+    }
+
+    public void executeQuery(QuerySupport queryBean, FieldFilter filter, BatchDataCallbackHandler batchDataCallbackHandler){
+        executeQuery(queryBean,-1,-1,filter, batchDataCallbackHandler);
+    }
+
+    private List<Map<String,Object>> executeQuery(QuerySupport queryBean, int firstIndex, int maxRow, FieldFilter filter,
+                                                  BatchDataCallbackHandler batchDataCallbackHandler){
         SqlObject sqlObject = queryBean.getQuery(filter);
-        Map<String, ValueFormatter> valueFormaters = queryBean.getValueFormater();
+        Map<String, ValueFormatter> valueFormatters = queryBean.getValueFormater();
 
         String sql = sqlObject.getSql();
 
@@ -308,16 +300,27 @@ public class JdbcEntityDao {
                 List<Map<String, Object>> recordMapList = new ArrayList<>();
                 while (rs.next()) {
                     Map<String, Object> recordMap = resultSet2Map(rs, fieldDefList);
-                    if (valueFormaters != null && !valueFormaters.isEmpty()) {
-                        for (String attrName : valueFormaters.keySet()) {
+                    if (valueFormatters != null && !valueFormatters.isEmpty()) {
+                        for (String attrName : valueFormatters.keySet()) {
                             if (recordMap.containsKey(attrName)) {
-                                ValueFormatter vf = valueFormaters.get(attrName);
+                                ValueFormatter vf = valueFormatters.get(attrName);
                                 Object v = recordMap.get(attrName);
                                 recordMap.put(attrName, vf.format(v, Collections.unmodifiableMap(recordMap)));
                             }
                         }
                     }
                     recordMapList.add(recordMap);
+                    if(batchDataCallbackHandler != null && recordMapList.size() == batchDataCallbackHandler.batchSize()){
+                        Map[] recordMapArray = recordMapList.stream().toArray(LinkedHashMap[]::new);
+                        batchDataCallbackHandler.processBatchData(recordMapArray);
+                        recordMapList.clear();
+                    }
+                }
+
+                if(batchDataCallbackHandler != null && !recordMapList.isEmpty()){
+                    Map[] recordMapArray = recordMapList.stream().toArray(LinkedHashMap[]::new);
+                    batchDataCallbackHandler.processBatchData(recordMapArray);
+                    recordMapList.clear();
                 }
                 return recordMapList;
             }, paramList.toArray());
@@ -327,7 +330,6 @@ public class JdbcEntityDao {
             }
             throw e;
         }
-
 
         if (showSqlMode == ShowSqlMode.TIME_SQL || showSqlMode == ShowSqlMode.JUST_SLOW_SQL) {
             long endTime = System.currentTimeMillis();

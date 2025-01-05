@@ -1,9 +1,6 @@
 package cn.kduck.core.service;
 
-import cn.kduck.core.dao.DeleteArchiveHandler;
-import cn.kduck.core.dao.FieldFilter;
-import cn.kduck.core.dao.JdbcEntityDao;
-import cn.kduck.core.dao.SqlObject;
+import cn.kduck.core.dao.*;
 import cn.kduck.core.dao.definition.BeanDefDepository;
 import cn.kduck.core.dao.definition.BeanEntityDef;
 import cn.kduck.core.dao.definition.BeanFieldDef;
@@ -677,7 +674,7 @@ public class DefaultService implements InitializingBean {
      * @return 结果集对象，如果没有满足条件的数据返回空集合，不会返回null
      */
     public ValueMapList list(QuerySupport queryBean){
-        return list(queryBean, null, null);
+        return list(queryBean, null, (FieldFilter)null);
     }
 
     /**
@@ -739,6 +736,16 @@ public class DefaultService implements InitializingBean {
             resultList.add(beanObject);
         }
         return resultList;
+    }
+
+    public void list(QuerySupport queryBean,FieldFilter filter, BatchDataCallbackHandler batchDataCallbackHandler){
+        Assert.notNull(queryBean,"QueryBean不能为null");
+        jdbcEntityDao.executeQuery(queryBean, filter,batchDataCallbackHandler);
+    }
+
+    public void list(QuerySupport queryBean,BatchDataCallbackHandler batchDataCallbackHandler){
+        Assert.notNull(queryBean,"QueryBean不能为null");
+        jdbcEntityDao.executeQuery(queryBean, null,batchDataCallbackHandler);
     }
 
     private List<Map<String, Object>> executeQuery(QuerySupport queryBean,Page page, FieldFilter filter){
