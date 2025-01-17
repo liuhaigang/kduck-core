@@ -7,7 +7,10 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
 import java.io.Serializable;
-import java.net.*;
+import java.net.Inet4Address;
+import java.net.InetAddress;
+import java.net.NetworkInterface;
+import java.net.SocketException;
 import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.concurrent.TimeUnit;
@@ -119,7 +122,9 @@ public class KduckIdGenerator implements IdGenerator {
 
         if (currentSecond < lastSecond) {
             long refusedSeconds = lastSecond - currentSecond;
-            throw new RuntimeException("Clock moved backwards. Refusing for " + refusedSeconds + " seconds");
+            currentSecond = lastSecond;
+            logger.warn("时钟回拨，采用逻辑时钟策略，当前时间延迟"+ refusedSeconds + "秒");
+//                throw new RuntimeException("Clock moved backwards. Refusing for " + refusedSeconds + " seconds");
         }
 
         if (currentSecond == lastSecond) {
@@ -146,12 +151,16 @@ public class KduckIdGenerator implements IdGenerator {
     }
 
     protected long getCurrentSecond() {
+        return getCurrentSecond(0);
+    }
+
+    protected long getCurrentSecond(long correctionSeconds) {
         long currentSecond = TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis());
         if (currentSecond - epochSeconds > maxDeltaSeconds) {
             throw new RuntimeException("Timestamp bits is exhausted. Refusing UID generate. Now: " + currentSecond);
         }
 
-        return currentSecond;
+        return currentSecond + correctionSeconds;
     }
 
     public interface ReginAllocator{

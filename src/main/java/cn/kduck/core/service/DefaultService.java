@@ -4,9 +4,6 @@ import cn.kduck.core.dao.*;
 import cn.kduck.core.dao.definition.BeanDefDepository;
 import cn.kduck.core.dao.definition.BeanEntityDef;
 import cn.kduck.core.dao.definition.BeanFieldDef;
-import cn.kduck.core.dao.definition.MemoryBeanDefDepository;
-import cn.kduck.core.dao.definition.impl.JdbcBeanDefSource;
-import cn.kduck.core.dao.dialect.DatabaseDialect;
 import cn.kduck.core.dao.id.IdGenerator;
 import cn.kduck.core.dao.id.impl.KduckIdGenerator;
 import cn.kduck.core.dao.id.impl.SnowFlakeGenerator;
@@ -21,14 +18,14 @@ import cn.kduck.core.dao.sqlbuilder.InsertBuilder;
 import cn.kduck.core.dao.sqlbuilder.SelectBuilder;
 import cn.kduck.core.dao.sqlbuilder.UpdateBuilder;
 import cn.kduck.core.dao.sqlbuilder.template.update.UpdateFragmentTemplate;
+import cn.kduck.core.service.autofill.AutofillValue;
+import cn.kduck.core.service.autofill.AutofillValue.FillType;
 import cn.kduck.core.service.autofill.impl.StandardFieldAutofill;
 import cn.kduck.core.service.exception.QueryNotFoundException;
 import cn.kduck.core.web.interceptor.OperateIdentificationInterceptor.OidHolder;
 import cn.kduck.core.web.interceptor.OperateIdentificationInterceptor.OperateIdentification;
 import cn.kduck.core.web.interceptor.operateinfo.OperateObject;
 import cn.kduck.core.web.interceptor.operateinfo.OperateObject.OperateType;
-import cn.kduck.core.service.autofill.AutofillValue;
-import cn.kduck.core.service.autofill.AutofillValue.FillType;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.InitializingBean;
@@ -36,7 +33,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
-import javax.sql.DataSource;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -617,15 +613,29 @@ public class DefaultService implements InitializingBean {
      * @see CustomQueryBean CustomQueryBean
      */
     public ValueMap get(QuerySupport queryBean, FieldFilter filter){
-        ValueMapList list = list(queryBean, new Page(false),filter);//此处设置new Page()按照分页查询，是避免查询出大批量数据。
+//        ValueMapList list = list(queryBean, new Page(false),filter);//此处设置new Page()按照分页查询，是避免查询出大批量数据。
+        ValueMapList list = new ValueMapList();
+        jdbcEntityDao.executeQuery(queryBean, filter, new BatchDataCallbackHandler() {
+            @Override
+            public int batchSize() {
+                return 2;
+            }
+
+            @Override
+            public void processBatchData(Map<String, Object>[] recordMaps) {
+                for (Map<String, Object> recordMap : recordMaps) {
+                    list.add(new ValueMap(recordMap));
+                }
+            }
+        });
         if(list.size() > 1){
-            throw new RuntimeException("要求最多返回1条记录，当前返回了多条数据："+list.size());
+            throw new RuntimeException("要求最多返回1条记录，当前返回了多于1条的数据");
         }
         if(list.isEmpty()){
             return null;
         }
 
-        return new ValueMap(list.get(0));
+        return list.get(0);
     }
 
     /**
