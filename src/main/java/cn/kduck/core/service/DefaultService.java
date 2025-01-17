@@ -614,15 +614,29 @@ public class DefaultService implements InitializingBean {
      * @see CustomQueryBean CustomQueryBean
      */
     public ValueMap get(QuerySupport queryBean, FieldFilter filter){
-        ValueMapList list = list(queryBean, new Page(false),filter);//此处设置new Page()按照分页查询，是避免查询出大批量数据。
+//        ValueMapList list = list(queryBean, new Page(false),filter);//此处设置new Page()按照分页查询，是避免查询出大批量数据。
+        ValueMapList list = new ValueMapList();
+        jdbcEntityDao.executeQuery(queryBean, filter, new BatchDataCallbackHandler() {
+            @Override
+            public int batchSize() {
+                return 2;
+            }
+
+            @Override
+            public void processBatchData(Map<String, Object>[] recordMaps) {
+                for (Map<String, Object> recordMap : recordMaps) {
+                    list.add(new ValueMap(recordMap));
+                }
+            }
+        });
         if(list.size() > 1){
-            throw new TooManyResultsException("要求最多返回1条记录，当前返回了多条数据："+list.size());
+            throw new RuntimeException("要求最多返回1条记录，当前返回了多于1条的数据");
         }
         if(list.isEmpty()){
             return null;
         }
 
-        return new ValueMap(list.get(0));
+        return list.get(0);
     }
 
     /**

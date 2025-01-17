@@ -122,7 +122,9 @@ public class KduckIdGenerator implements IdGenerator {
 
         if (currentSecond < lastSecond) {
             long refusedSeconds = lastSecond - currentSecond;
-            throw new RuntimeException("Clock moved backwards. Refusing for " + refusedSeconds + " seconds");
+            currentSecond = lastSecond;
+            logger.warn("时钟回拨，采用逻辑时钟策略，当前时间延迟"+ refusedSeconds + "秒");
+//                throw new RuntimeException("Clock moved backwards. Refusing for " + refusedSeconds + " seconds");
         }
 
         if (currentSecond == lastSecond) {
