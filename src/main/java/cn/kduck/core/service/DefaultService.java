@@ -630,7 +630,7 @@ public class DefaultService implements InitializingBean {
             }
         });
         if(list.size() > 1){
-            throw new RuntimeException("要求最多返回1条记录，当前返回了多于1条的数据");
+            throw new TooManyResultsException("要求最多返回1条记录，当前返回了多于1条的数据");
         }
         if(list.isEmpty()){
             return null;
