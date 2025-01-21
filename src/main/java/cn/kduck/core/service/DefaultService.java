@@ -4,6 +4,7 @@ import cn.kduck.core.dao.*;
 import cn.kduck.core.dao.definition.BeanDefDepository;
 import cn.kduck.core.dao.definition.BeanEntityDef;
 import cn.kduck.core.dao.definition.BeanFieldDef;
+import cn.kduck.core.dao.exception.TooManyResultsException;
 import cn.kduck.core.dao.id.IdGenerator;
 import cn.kduck.core.dao.id.impl.KduckIdGenerator;
 import cn.kduck.core.dao.id.impl.SnowFlakeGenerator;
@@ -629,7 +630,7 @@ public class DefaultService implements InitializingBean {
             }
         });
         if(list.size() > 1){
-            throw new RuntimeException("要求最多返回1条记录，当前返回了多于1条的数据");
+            throw new TooManyResultsException("要求最多返回1条记录，当前返回了多于1条的数据");
         }
         if(list.isEmpty()){
             return null;
