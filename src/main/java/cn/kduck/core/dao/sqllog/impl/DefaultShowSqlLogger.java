@@ -50,25 +50,34 @@ public class DefaultShowSqlLogger implements ShowSqlLogger {
             //如果开启慢sql日志，则如果未达到阈值则直接返回。
             return;
         }
-        List<Object> printParam = new ArrayList<>(paramList.size());
-        String paramJson;
-        try {
-            for (Object rowParam : paramList) {
-                if (rowParam.getClass().isArray()) {
-                    Object[] paramItems = (Object[]) rowParam;
-                    Object[] tempItems = new Object[paramItems.length];
-                    for (int i1 = 0; i1 < paramItems.length; i1++) {
-                        Object paramItem = paramItems[i1];
-                        tempItems[i1] = unwrapParamValue(paramItem);
+
+        if(sql.length() > 1000){
+            sql = sql.substring(0,1000) +"...";
+        }
+
+        String paramText;
+        if(paramList.size() > 100){
+            paramText = "【SQL参数过多，无法显示】";
+        }else{
+            List<Object> printParam = new ArrayList<>(paramList.size());
+            try {
+                for (Object rowParam : paramList) {
+                    if (rowParam.getClass().isArray()) {
+                        Object[] paramItems = (Object[]) rowParam;
+                        Object[] tempItems = new Object[paramItems.length];
+                        for (int i1 = 0; i1 < paramItems.length; i1++) {
+                            Object paramItem = paramItems[i1];
+                            tempItems[i1] = unwrapParamValue(paramItem);
+                        }
+                        printParam.add(tempItems);
+                    } else {
+                        printParam.add(unwrapParamValue(rowParam));
                     }
-                    printParam.add(tempItems);
-                } else {
-                    printParam.add(unwrapParamValue(rowParam));
                 }
+                paramText =  jsonMapper.writeValueAsString(printParam);
+            } catch (JsonProcessingException e) {
+                paramText = "【参数值转换JSON错误】";
             }
-            paramJson =  jsonMapper.writeValueAsString(printParam);
-        } catch (JsonProcessingException e) {
-            paramJson = "【参数值转换JSON错误】";
         }
 
         String spendTime = "";
@@ -102,7 +111,7 @@ public class DefaultShowSqlLogger implements ShowSqlLogger {
                 AnsiColor.YELLOW,
                 "PARAMS:",
                 AnsiColor.DEFAULT,
-                paramJson,
+                paramText,
                 queryText,
                 AnsiStyle.NORMAL);
         writer.println(printSql);
