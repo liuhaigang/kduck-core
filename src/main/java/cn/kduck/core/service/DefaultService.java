@@ -19,10 +19,12 @@ import cn.kduck.core.dao.sqlbuilder.InsertBuilder;
 import cn.kduck.core.dao.sqlbuilder.SelectBuilder;
 import cn.kduck.core.dao.sqlbuilder.UpdateBuilder;
 import cn.kduck.core.dao.sqlbuilder.template.update.UpdateFragmentTemplate;
+import cn.kduck.core.exception.NonUniqueAttributeException;
 import cn.kduck.core.service.autofill.AutofillValue;
 import cn.kduck.core.service.autofill.AutofillValue.FillType;
 import cn.kduck.core.service.autofill.impl.StandardFieldAutofill;
 import cn.kduck.core.service.exception.QueryNotFoundException;
+import cn.kduck.core.utils.ConversionUtils;
 import cn.kduck.core.web.interceptor.OperateIdentificationInterceptor.OidHolder;
 import cn.kduck.core.web.interceptor.OperateIdentificationInterceptor.OperateIdentification;
 import cn.kduck.core.web.interceptor.operateinfo.OperateObject;
@@ -35,10 +37,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Function;
 
 /**
@@ -351,6 +350,10 @@ public class DefaultService implements InitializingBean {
         delete(ids, beanEntityDef, pkFieldDef);
     }
 
+    public void delete(String entityDefName,Serializable id){
+        delete(entityDefName,new Serializable[]{id});
+    }
+
     /**
      * 根据其他键值，删除指定的数据。<p/>
      * 框架在删除时采用物理删除，但默认会将被删除的数据归档到K_DELETE_ARCHIVE表（需提前创建），
@@ -365,6 +368,10 @@ public class DefaultService implements InitializingBean {
         BeanFieldDef fkFieldDef = getFieldDef(beanEntityDef,attrName);
 
         delete(attrValues, beanEntityDef, fkFieldDef);
+    }
+
+    public void delete(String entityDefName, String attrName, Serializable attrValue){
+        delete(entityDefName, attrName, new Serializable[]{attrValue});
     }
 
     private void delete(Serializable[] ids, BeanEntityDef beanEntityDef, BeanFieldDef pkFieldDef) {
@@ -587,6 +594,76 @@ public class DefaultService implements InitializingBean {
      */
     public <R>  R getForBean(QuerySupport queryBean, Function<Map,R> bean){
         return getForBean(queryBean,null,bean);
+    }
+
+    /**
+     * 查询单条属性，要求返回的数据中只有一个属性字段返回，将数据值转换为typeClass类型返回。
+     * @param entityDefName 实体定义编码名
+     * @param id 数据的主键值
+     * @param typeClass 最终返回数据的数据类型
+     * @return 指定类型的数据值
+     */
+    public <T>  T getForClass(String entityDefName, String id, Class<T> typeClass){
+        ValueMap valueMap = get(entityDefName, id);
+        return getForClass(valueMap, null, typeClass);
+    }
+
+
+    /**
+     * 查询单条属性，根据extractAttrName属性提取属性值，转换为typeClass类型的数据值返回。
+     * @param entityDefName 实体定义编码名
+     * @param id 数据的主键值
+     * @param extractAttrName 需要提取的属性名
+     * @param typeClass 最终返回数据的数据类型
+     * @return 指定类型的数据值
+     */
+    public <T>  T getForClass(String entityDefName, String id, String extractAttrName, Class<T> typeClass){
+        ValueMap valueMap = get(entityDefName, id);
+        return getForClass(valueMap, extractAttrName, typeClass);
+    }
+
+    /**
+     * 查询单条属性，根据extractAttrName属性提取属性值，转换为typeClass类型的数据值返回。
+     * @param entityDefName 实体定义编码名
+     * @param attrName 用于条件的属性名
+     * @param attrValue 用于条件的属性值
+     * @param extractAttrName 需要提取的属性名
+     * @param typeClass 最终返回数据的数据类型
+     * @return 指定类型的数据值
+     */
+    public <T>  T getForClass(String entityDefName, String attrName, String attrValue, String extractAttrName, Class<T> typeClass){
+        ValueMap valueMap = get(entityDefName, attrName,attrValue,null);
+        return getForClass(valueMap, extractAttrName, typeClass);
+    }
+
+    public <T>  T getForClass(QuerySupport queryBean,Class<T> typeClass){
+        return getForClass(queryBean,null,typeClass);
+    }
+
+    public <T>  T getForClass(QuerySupport queryBean, String extractAttrName,Class<T> typeClass){
+        ValueMap valueMap = get(queryBean);
+        return getForClass(valueMap,extractAttrName,typeClass);
+    }
+    public <T>  T getForClass(ValueMap valueMap, String extractAttrName,Class<T> typeClass){
+        if(valueMap == null || valueMap.isEmpty()){
+            return null;
+        }
+
+        Object o;
+        if(extractAttrName != null){
+            o = valueMap.get(extractAttrName);
+            if(o == null){
+                return null;
+            }
+        }else{
+            if(valueMap.size() != 1){
+                throw new NonUniqueAttributeException("要求返回的单条数据中只能包含一个属性：" + valueMap.size());
+            }
+            String key = valueMap.keySet().iterator().next();
+            o = valueMap.get(key);
+        }
+
+        return typeClass != null ? ConversionUtils.convert(o,typeClass) : (T)o;
     }
 
     /**
