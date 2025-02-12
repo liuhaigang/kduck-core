@@ -1,6 +1,7 @@
 package cn.kduck.core.web.validation;
 
 import cn.kduck.core.web.json.JsonObject;
+import cn.kduck.core.web.validation.ValidError.ValidErrorField;
 import org.springframework.validation.BindException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -33,6 +34,13 @@ public class BindingResultAdvice {
         return jsonObject;
     }
 
+    @ExceptionHandler(ValidationException.class)
+    public Object kduckValidExceptionHandler(ValidationException e, HttpServletResponse respones){
+        respones.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+        List<ValidErrorField> errorFields = e.getErrorFields();
+        return buildErrorJsonObject(e.getMessage(),errorFields);
+    }
+
     private JsonObject getValidErrorJsonObject(List<FieldError> fieldErrors) {
         List<ValidError> validErrorList = new ArrayList<>();
         StringBuilder infoBuilder = new StringBuilder();
@@ -41,8 +49,12 @@ public class BindingResultAdvice {
             infoBuilder.append(fieldError.getField() + fieldError.getDefaultMessage());
         }
 
-        JsonObject jsonObject = new JsonObject(validErrorList);
-        jsonObject.setMessage("数据校验失败：" + infoBuilder);
+        return buildErrorJsonObject(infoBuilder.toString(),validErrorList);
+    }
+
+    private JsonObject buildErrorJsonObject(String errorMessage,Object object){
+        JsonObject jsonObject = new JsonObject(object);
+        jsonObject.setMessage("数据校验失败：" + errorMessage);
         jsonObject.setCode(-2);
         return jsonObject;
     }
