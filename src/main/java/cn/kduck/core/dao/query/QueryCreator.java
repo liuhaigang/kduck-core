@@ -5,13 +5,14 @@ import cn.kduck.core.dao.definition.BeanDefDepository;
 import java.util.Map;
 
 /**
- * 查询对象Query构造器
+ * 查询对象Query构造器，该接口不能用于增删改，仅用于拼装查询sql的QuerySupport对象。通常做法是在该方法中构造Selectbuilder
+ * d
  * @author LiuHG
  */
 public interface QueryCreator {
 
     default String queryCode(){
-        return getClass().getSimpleName();
+        return getClass().getName();
     }
 
     /**

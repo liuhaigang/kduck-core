@@ -1,12 +1,11 @@
 package cn.kduck.core.dao.definition.impl;
 
+import cn.kduck.core.KduckProperties;
+import cn.kduck.core.KduckProperties.EntityDefinitionProperties;
+import cn.kduck.core.KduckProperties.ScanTablesProperties;
 import cn.kduck.core.dao.datasource.DataSourceSwitch;
 import cn.kduck.core.dao.datasource.DynamicDataSource;
-import cn.kduck.core.dao.definition.BeanEntityDef;
-import cn.kduck.core.dao.definition.BeanDefSource;
-import cn.kduck.core.dao.definition.BeanFieldDef;
-import cn.kduck.core.dao.definition.FieldAliasGenerator;
-import cn.kduck.core.dao.definition.TableAliasGenerator;
+import cn.kduck.core.dao.definition.*;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,26 +31,21 @@ public class JdbcBeanDefSource implements BeanDefSource {
 
     private final Log logger = LogFactory.getLog(JdbcBeanDefSource.class);
 
-    @Autowired
     private DataSource dataSource;
 
-    @Autowired
-    private FieldAliasGenerator fieldAliasGenerator;
+    private FieldAliasGenerator fieldAliasGenerator = new DefaultFieldAliasGenerator();
 
-    @Autowired
-    private TableAliasGenerator tableAliasGenerator;
+    private TableAliasGenerator tableAliasGenerator = new DefaultTableAliasGenerator();
 
-    @Value("${kduck.definition.tables.exclude:}")
-    private String[] excludeTables;
-
-    @Value("${kduck.definition.tables.include:}")
-    private String[] includeTables;
-
-    @Autowired(required = false)
     private FieldDefCorrector fieldDefCorrector;
-
-    @Autowired(required = false)
     private EntityDefCorrector entityDefCorrector;
+
+    private EntityDefinitionProperties definitionProperties;
+
+    public JdbcBeanDefSource(DataSource dataSource, EntityDefinitionProperties definitionProperties){
+        this.dataSource = dataSource;
+        this.definitionProperties = definitionProperties;
+    }
 
     @Override
     public String getNamespace() {
@@ -59,25 +53,30 @@ public class JdbcBeanDefSource implements BeanDefSource {
     }
 
     private boolean analysisTable(String tableName){
+        ScanTablesProperties tables = definitionProperties.getTables();
+        String[] includeTables = tables.getInclude();
+        String[] excludeTables = tables.getExclude();
         if(includeTables.length == 0 && excludeTables.length == 0 ) return true;
 
         //Kduck表默认都需要扫描
-        if(tableName.startsWith("K_")) return true;
+//        if(tableName.startsWith("K_")) return true;
 
         if (match(tableName,includeTables)) return true;
 
-        if(!match(tableName,excludeTables)) return true;
+        if(includeTables.length == 0 && !match(tableName,excludeTables)) return true;
         return false;
     }
 
     private boolean match(String tableName,String[] tables) {
+        tableName = tableName.toUpperCase();
         for (String tablePattern : tables) {
+            tablePattern = tablePattern.toUpperCase();
             if(tablePattern.endsWith("*")){
                 String prefix = tablePattern.substring(0, tablePattern.length() - 1);
                 if(tableName.startsWith(prefix)){
                     return true;
                 }
-            }else if(tableName.startsWith(tablePattern)){
+            }else if(tableName.equals(tablePattern)){
                 return true;
             }
         }
@@ -177,7 +176,7 @@ public class JdbcBeanDefSource implements BeanDefSource {
                         String attrName = fieldAliasGenerator.genAlias(lookupKey,tableName,columnName);
 
                         //for oralce
-                        if(dataType == Types.NUMERIC){
+                        if(dataType == Types.NUMERIC || dataType == Types.DECIMAL){
                             dataType = digits > 0 ? Types.NUMERIC :Types.BIGINT;
                         }
 
@@ -233,11 +232,11 @@ public class JdbcBeanDefSource implements BeanDefSource {
     }
 
     @Override
-    public BeanEntityDef reloadEntity(String entityCode) {
-        //FIXME entityCode为编码，但下方接口参数需要表名，因为现在编码和表名一致，因此暂时可以是用。
-        List<BeanEntityDef> beanEntityDefs = listEntityDefFromTable(entityCode);
+    public BeanEntityDef reloadEntity(String tableName) {
+        //FIXME entityCode为编码，但下方接口参数需要表名，因为现在编码和表名一致，因此暂时可以使用。等以后用实体编码置换成表名。
+        List<BeanEntityDef> beanEntityDefs = listEntityDefFromTable(tableName);
         if(beanEntityDefs == null || beanEntityDefs.isEmpty()) return null;
-        Assert.isTrue(beanEntityDefs.size() == 1,"根据实体编码查询出的实体多余1条：" + entityCode);
+        Assert.isTrue(beanEntityDefs.size() == 1,"根据实体编码查询出的实体多余1条：" + tableName);
         return beanEntityDefs.get(0);
     }
 
@@ -252,5 +251,13 @@ public class JdbcBeanDefSource implements BeanDefSource {
             }
         }
         return false;
+    }
+
+    public void setFieldDefCorrector(FieldDefCorrector fieldDefCorrector) {
+        this.fieldDefCorrector = fieldDefCorrector;
+    }
+
+    public void setEntityDefCorrector(EntityDefCorrector entityDefCorrector) {
+        this.entityDefCorrector = entityDefCorrector;
     }
 }

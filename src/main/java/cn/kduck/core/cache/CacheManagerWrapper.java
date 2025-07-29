@@ -3,6 +3,7 @@ package cn.kduck.core.cache;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.CacheManager;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
@@ -18,12 +19,17 @@ public class CacheManagerWrapper {
     private final static String DEFAULT_CACHE_NAME = "default";
 
     private final CacheManager cacheManager;
+    private final CacheExpiredHandler cacheExpiredHandler;
 
     private ObjectMapper objectMapper = new ObjectMapper();
 
+    @Value("${kduck.cache.cache-name-prefix:}")
+    private String cacheNamePrefix;
+
     @Autowired
-    public CacheManagerWrapper(CacheManager cacheManager){
+    public CacheManagerWrapper(CacheManager cacheManager,CacheExpiredHandler cacheExpiredHandler){
         this.cacheManager = cacheManager;
+        this.cacheExpiredHandler = cacheExpiredHandler;
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
     }
 
@@ -31,14 +37,16 @@ public class CacheManagerWrapper {
         if(!StringUtils.hasText(name)){
             name = DEFAULT_CACHE_NAME;
         }
-        return new CacheWrapper(cacheManager.getCache(name),objectMapper);
+
+        if(cacheNamePrefix.length() > 0){
+            name = cacheNamePrefix + "::" + name;
+        }
+
+        return new CacheWrapper(cacheManager.getCache(name),objectMapper,cacheExpiredHandler);
     }
 
     public Collection<String> getCacheNames() {
         return cacheManager.getCacheNames();
     }
 
-    public void clearExpired(String name) {
-        CacheWrapper cache = getCache(name);
-    }
 }

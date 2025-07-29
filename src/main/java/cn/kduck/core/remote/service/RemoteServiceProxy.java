@@ -6,6 +6,7 @@ import cn.kduck.core.remote.web.RemoteMethod;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.FactoryBean;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.core.ParameterizedTypeReference;
@@ -28,7 +29,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class RemoteServiceProxy implements FactoryBean,ApplicationContextAware {
+public class RemoteServiceProxy implements FactoryBean,ApplicationContextAware, InitializingBean {
 
     private String serviceName;
     private final Class proxyClass;
@@ -44,7 +45,6 @@ public class RemoteServiceProxy implements FactoryBean,ApplicationContextAware {
 
     public RemoteServiceProxy(Class proxyClass){
         this.proxyClass = proxyClass;
-
     }
 
 //    @Override
@@ -70,6 +70,7 @@ public class RemoteServiceProxy implements FactoryBean,ApplicationContextAware {
     public Object getObject() {
         ProxyService proxyService = AnnotationUtils.findAnnotation(proxyClass, ProxyService.class);
         serviceName = proxyService.serviceName();
+        String clientPrefix = proxyService.clientPrefix();
         servicePath = proxyService.servicePaths();
 
         if(serviceImpl != null){
@@ -88,8 +89,6 @@ public class RemoteServiceProxy implements FactoryBean,ApplicationContextAware {
                 }
             }
 
-
-
             restTemplate = applicationContext.getBean(RestTemplate.class);
 
             Environment env = applicationContext.getEnvironment();
@@ -102,7 +101,7 @@ public class RemoteServiceProxy implements FactoryBean,ApplicationContextAware {
             }else{
                 servicePath = pathConfig.split("[,;]");
             }
-            serviceImpl = new ProxyServiceImpl(serviceName,servicePath,restTemplate,jsonMapper);
+            serviceImpl = new ProxyServiceImpl(clientPrefix,serviceName,servicePath,restTemplate,jsonMapper);
             isClient = true;
             return Proxy.newProxyInstance(proxyClass.getClassLoader(),new Class[]{proxyClass},(InvocationHandler)serviceImpl);
         }
@@ -121,12 +120,20 @@ public class RemoteServiceProxy implements FactoryBean,ApplicationContextAware {
         return isClient;
     }
 
+    @Override
+    public void afterPropertiesSet() throws Exception {
+        ProxyService proxyService = AnnotationUtils.findAnnotation(proxyClass, ProxyService.class);
+        serviceName = proxyService.serviceName();
+        RemoteServiceDepository.addRemoteServiceClass(serviceName,proxyClass);
+    }
+
     public static class ProxyServiceImpl implements InvocationHandler {
 
         private final String serviceName;
         private final String[] servicePaths;
         private final RestTemplate restTemplate;
         private final ObjectMapper jsonMapper;
+        private final String clientPrefix;
 
         private Map<String, Method> methodMap = new HashMap<>();
 
@@ -138,10 +145,15 @@ public class RemoteServiceProxy implements FactoryBean,ApplicationContextAware {
          * @param jsonMapper 用于序列化、范序列化请求参数和响应的json工具对象
          */
         public ProxyServiceImpl(String serviceName,String[] servicePaths, RestTemplate restTemplate, ObjectMapper jsonMapper){
+            this("",serviceName,servicePaths,restTemplate,jsonMapper);
+        }
+
+        public ProxyServiceImpl(String clientPrefix,String serviceName,String[] servicePaths, RestTemplate restTemplate, ObjectMapper jsonMapper){
             this.serviceName = serviceName;
             this.servicePaths = servicePaths;
             this.restTemplate = restTemplate;
             this.jsonMapper = jsonMapper;
+            this.clientPrefix = clientPrefix;
         }
 
         @Override
@@ -163,15 +175,19 @@ public class RemoteServiceProxy implements FactoryBean,ApplicationContextAware {
 
             ServletRequestAttributes servletRequestAttributes =
                     (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
-            HttpServletRequest request = servletRequestAttributes.getRequest();
 
-            //*************** 处理认证的Header ****************
-            MultiValueMap header = new LinkedMultiValueMap();
-            String authorization = request.getHeader("Authorization");
-            if(authorization != null) {
-                header.add("Authorization", authorization);
+            MultiValueMap header = null;
+            if(servletRequestAttributes != null){
+                HttpServletRequest request = servletRequestAttributes.getRequest();
+
+                //*************** 处理认证的Header ****************
+                header = new LinkedMultiValueMap();
+                String authorization = request.getHeader("Authorization");
+                if(authorization != null) {
+                    header.add("Authorization", authorization);
+                }
+                //***********************************************
             }
-            //***********************************************
 
             HttpEntity httpEntity = new HttpEntity(remoteMethod,header);
 
@@ -181,6 +197,19 @@ public class RemoteServiceProxy implements FactoryBean,ApplicationContextAware {
 
             //TODO 处理多个服务路径配置的情况
             String servicePath = servicePaths[0];
+            if(!"".equals(clientPrefix)){
+                for (String path : servicePaths) {
+                    String[] split = path.split("[|]");
+                    if(split.length != 2){
+                        throw new RuntimeException("远程接口路径配置格式错误，对于带有前缀的远程接口配置，格式为：前缀1|路径1,前缀1|路径2。当前配置：" + path);
+                    }
+                    if(split[0].equals(clientPrefix)){
+                        servicePath = split[1];
+                        break;
+                    }
+                }
+            }
+
             servicePath = servicePath.endsWith("/") ? servicePath : servicePath + "/";
             servicePath += "proxy/" + serviceName;
 
@@ -198,7 +227,7 @@ public class RemoteServiceProxy implements FactoryBean,ApplicationContextAware {
                     return responseEntity.getBody();
                 }
             }catch (Throwable e){
-                throw new RemoteException("调用远程接口失败：" + servicePath,e);
+                throw new RemoteException(serviceName,"调用远程接口失败：" + servicePath,e);
             }
         }
 

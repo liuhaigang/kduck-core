@@ -14,7 +14,11 @@ public class DataSourceSwitchInterceptor implements HandlerInterceptor {
             if(DataSourceSwitch.get() != null){
                 DataSourceSwitch.remove();
             }
-            DataSourceSwitch.switchByCondition(request);
+            String defaultDsName = DataSourceSwitch.getDefaultDsName();
+            boolean matched = DataSourceSwitch.switchByCondition(request, defaultDsName);
+            if(!matched){
+                DataSourceSwitch.switchByCondition(handler, defaultDsName);
+            }
         }
         return true;
     }

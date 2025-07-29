@@ -12,13 +12,13 @@ public class EventMessageListener implements MessageListener {
 
     private ObjectMapper objectMapper = new ObjectMapper();
 
-    private List<EventListener> eventListenerList;
+    private EventListener eventListener;
 
     private EventTrigger eventTrigger = new EventTrigger();
 
     @Autowired
-    public EventMessageListener(List<EventListener> eventListenerList){
-        this.eventListenerList = eventListenerList;
+    public EventMessageListener(EventListener eventListener){
+        this.eventListener = eventListener;
     }
 
     @Override
@@ -29,11 +29,12 @@ public class EventMessageListener implements MessageListener {
         } catch (IOException e) {
             throw new RuntimeException("消息对象转换为Event对象时错误",e);
         }
-        for (EventListener eventListener : eventListenerList) {
-            if(eventListener.eventCode().equals(event.getCode())
-                    && eventListener.eventType().equals(event.getType())){
-                eventTrigger.onEvent(event,eventListener);
-            }
-        }
+        eventTrigger.onEvent(event,eventListener);
+//        for (EventListener eventListener : eventListenerList) {
+//            if(eventListener.eventCode().equals(event.getCode())
+//                    && eventListener.eventType().equals(event.getType())){
+//                eventTrigger.onEvent(event,eventListener);
+//            }
+//        }
     }
 }

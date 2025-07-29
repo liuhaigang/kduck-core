@@ -14,7 +14,9 @@ public interface BeanDefDepository {
 
     void deleteEntity(String name);
 
-    void reloadEntity(String name);
+    void reloadEntity(String tableName);
 
     Map<String,BeanEntityDef> getAllEntityDef();
+
+    void reloadAllEntity();
 }

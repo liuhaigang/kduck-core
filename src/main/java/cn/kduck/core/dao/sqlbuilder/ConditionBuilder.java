@@ -219,7 +219,7 @@ public abstract class ConditionBuilder {
             }
             //##########################################################
             String attrName = condition.getAttrName();
-            if(attrName != null){//因为is null 和is not null的条件关系，所以可能attrName为null
+            if(attrName != null && !attrName.startsWith("${") && !attrName.endsWith("}")){//因为is null 和is not null的条件关系，所以可能attrName为null
                 attrNameList.add(attrName);
             }
         }
@@ -336,7 +336,12 @@ public abstract class ConditionBuilder {
                             sqlBuidler.append(condition.getCondition(groupCount * GROUP_SPLIT_SIZE, groupCount * GROUP_SPLIT_SIZE + GROUP_SPLIT_SIZE));
                             groupCount++;
                             if((i+1) < maxIndex){
-                                sqlBuidler.append(" OR ");
+                                if(conditionType == ConditionType.NOT_IN){
+                                    sqlBuidler.append(" AND ");
+                                }else{
+                                    sqlBuidler.append(" OR ");
+                                }
+
                             }
                             logger.warn("当前查询SQL语句的IN条件元素已经达到" + (groupCount*GROUP_SPLIT_SIZE) + "，请考虑逻辑优化");
                         }
@@ -452,7 +457,7 @@ public abstract class ConditionBuilder {
      * 条件对象，用于包装单个条件。通过getCondition方法得到条件的SQL片段，并将参数名的部分拼装成"#{getAttrName}"的形式。
      * @author LiuHG
      */
-    private static class StandardCondition implements Condition {
+    static class StandardCondition implements Condition {
 
         private final String fieldName;
         private final ConditionType conditionType;

@@ -7,7 +7,7 @@ import cn.kduck.core.dao.sqlbuilder.template.update.UpdateFragmentTemplate;
 import java.util.Map;
 
 /**
- * 字段自增更新模版，用于字段根据条件自增的情况，拼写类似FIELD_NAME = FIELD_NAME +1的SQL片段
+ * 字段自增更新模版，用于字段根据条件自增的情况，拼写类似FIELD_NAME=FIELD_NAME+1的SQL片段
  * @author LiuHG
  * @see UpdateBuilder UpdateBuilder
  */

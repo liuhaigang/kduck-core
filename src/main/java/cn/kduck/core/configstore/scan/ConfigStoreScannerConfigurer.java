@@ -39,6 +39,7 @@ public class ConfigStoreScannerConfigurer implements BeanDefinitionRegistryPostP
             return beanName;
         });
         List<String> packages = ScanPackageUtils.getScanPackages(this.beanFactory);
+        packages.add("cn.kduck");
         scanner.scan(StringUtils.toStringArray(packages));
     }
 

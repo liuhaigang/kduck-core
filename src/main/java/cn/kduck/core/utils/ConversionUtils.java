@@ -6,12 +6,13 @@ import org.springframework.core.convert.support.DefaultConversionService;
 import org.springframework.core.convert.support.GenericConversionService;
 import org.springframework.util.StringUtils;
 
+import java.io.Reader;
+import java.io.StringReader;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.EnumMap;
 
 /**
  * LiuHG
@@ -28,13 +29,35 @@ public final class ConversionUtils {
                 return new Date(source);
             }
         });
+
+        genericConversionService.addConverter(new Integer2DateConverter());
         genericConversionService.addConverter(new DateConverter());
         genericConversionService.addConverter(new Boolean2IntegerConverter());
         genericConversionService.addConverter(new Integer2BooleanConverter());
+        genericConversionService.addConverter(new Boolean2LongConverter());
+        genericConversionService.addConverter(new Long2BooleanConverter());
+        genericConversionService.addConverter(new ReaderConverter());
+
     }
 
     public static <T> T convert(Object source, Class<T> targetType){
         return conversionService.convert(source,targetType);
+    }
+
+    public static class Boolean2LongConverter implements Converter<Boolean, Long>{
+        @Override
+        public Long convert(Boolean source) {
+            if(source == null) return 0L;
+            return source.booleanValue() ? 1L : 0L;
+        }
+    }
+
+    public static class Long2BooleanConverter implements Converter<Long,Boolean>{
+        @Override
+        public Boolean convert(Long source) {
+            if(source == null) return false;
+            return source.intValue() > 0L ? true : false;
+        }
     }
 
     public static class Boolean2IntegerConverter implements Converter<Boolean, Integer>{
@@ -53,6 +76,22 @@ public final class ConversionUtils {
         }
     }
 
+    public static class Integer2DateConverter implements Converter<Integer, Date>{
+        @Override
+        public Date convert(Integer source) {
+            return new Date(source.longValue());
+        }
+    }
+
+    public static class ReaderConverter implements Converter<String, Reader>{
+
+        @Override
+        public Reader convert(String source) {
+            if(source == null) return null;
+            return new StringReader(source);
+        }
+    }
+
     public static class DateConverter implements Converter<String, Date>{
 
         private ThreadLocal<DateFormatContainer> dateConverterThreadLocal = new ThreadLocal<>();
@@ -65,7 +104,7 @@ public final class ConversionUtils {
         @Override
         public Date convert(String dateValue) {
             String value = dateValue.trim();
-            if (StringUtils.isEmpty(value)) {
+            if (!StringUtils.hasText(value)) {
                 return null;
             }
             if (dateValue.matches("^\\d{4}-\\d{1,2}$")) {
@@ -76,8 +115,10 @@ public final class ConversionUtils {
                 return parseDate(dateValue, DateFormatType.DATE_FORMAT_YMDHM);
             } else if (dateValue.matches("^\\d{4}-\\d{1,2}-\\d{1,2} {1}\\d{1,2}:\\d{1,2}:\\d{1,2}$")) {
                 return parseDate(dateValue, DateFormatType.DATE_FORMAT_YMDHMS);
-            }  else if (dateValue.matches("^[\\-|1-9]\\d*$")) {
+            } else if (dateValue.matches("^[\\-|1-9]\\d*$")) {
                 return new Date(Long.valueOf(dateValue));
+            } else if (dateValue.matches("^{1}\\d{1,2}:\\d{1,2}:\\d{1,2}$")) {
+                return parseDate(dateValue, DateFormatType.DATE_FORMAT_HMS);
             } else {
                 throw new IllegalArgumentException("没有对该日期类型格式准备适合的转换器：" + dateValue);
             }
@@ -98,11 +139,12 @@ public final class ConversionUtils {
             }
         }
 
-        private class DateFormatContainer {
+        private static class DateFormatContainer {
 
-            private Map<DateFormatType,DateFormat> dateFormatMap = new HashMap();
+            private EnumMap<DateFormatType,DateFormat> dateFormatMap = new EnumMap(DateFormatType.class);
 
             public DateFormatContainer(){
+                dateFormatMap.put(DateFormatType.DATE_FORMAT_HMS,new SimpleDateFormat("HH:mm:ss"));
                 dateFormatMap.put(DateFormatType.DATE_FORMAT_YM,new SimpleDateFormat("yyyy-MM"));
                 dateFormatMap.put(DateFormatType.DATE_FORMAT_YMD,new SimpleDateFormat("yyyy-MM-dd"));
                 dateFormatMap.put(DateFormatType.DATE_FORMAT_YMDHM,new SimpleDateFormat("yyyy-MM-dd HH:mm"));
@@ -120,6 +162,7 @@ public final class ConversionUtils {
             DATE_FORMAT_YMD,
             DATE_FORMAT_YMDHM,
             DATE_FORMAT_YMDHMS,
+            DATE_FORMAT_HMS,
         }
     }
 

@@ -1,11 +1,10 @@
 package cn.kduck.core.dao.sqlbuilder;
 
 import cn.kduck.core.dao.query.QuerySupport;
+import cn.kduck.core.dao.sqlbuilder.SelectBuilder.AggregateType;
 import cn.kduck.core.dao.sqlbuilder.SelectConditionBuilder.OrderBuilder.OrderType;
 
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Select操作的条件构造器
@@ -121,7 +120,7 @@ public abstract class SelectConditionBuilder extends ConditionBuilder{
         SqlStringSplicer sqlBuidler = new SqlStringSplicer(sql);
 
         if(groupBuilder != null){
-            String[] filedNames = groupBuilder.getFiledNames();
+            String[] filedNames = groupBuilder.filedNames;
             if(filedNames.length > 0){
                 sqlBuidler.append(" GROUP BY ");
                 for (int i = 0; i < filedNames.length; i++) {
@@ -130,6 +129,12 @@ public abstract class SelectConditionBuilder extends ConditionBuilder{
                         sqlBuidler.append(',');
                     }
                 }
+            }
+
+            HavingBuilder havingBuilder = groupBuilder.havingBuilder;
+            if(havingBuilder.hasCondition()){
+                String havingSql = havingBuilder.toCondition(valueMap);
+                sqlBuidler.append(havingSql);
             }
         }
 
@@ -185,47 +190,57 @@ public abstract class SelectConditionBuilder extends ConditionBuilder{
     public static class DynamicOrderBuilder extends OrderBuilder{
 
         private Map<String,String> mappingMap = new LinkedHashMap<>();
+        private Map<String,String> defaultOrderMap = new LinkedHashMap<>();
 
         public DynamicOrderBuilder mapping(String fieldName,String paramName){
             mappingMap.put(paramName,fieldName);
             return this;
         }
 
+        public DynamicOrderBuilder defaultOrder(String fieldName,OrderType orderType){
+            defaultOrderMap.put(fieldName,orderType.name());
+            return this;
+        }
+
         @Override
         protected Map<String,OrderType> getOrderMap(Map<String, Object> valueMap){
             if(!mappingMap.isEmpty()){
-                Iterator<String> nameIterator = mappingMap.keySet().iterator();
-                while(nameIterator.hasNext()){
-                    String orderParamName = nameIterator.next();
-                    Object orderParamValue = valueMap.get(orderParamName);
-                    if(orderParamValue != null){
-                        String orderType = orderParamValue.toString().toUpperCase();
-                        if("DESC".equals(orderType)){
-                            super.desc(mappingMap.get(orderParamName));
-                        }else if("ASC".equals(orderType)){
-                            super.asc(mappingMap.get(orderParamName));
-                        }
+                processDynamicOrder(mappingMap,valueMap);
+            }else if(!defaultOrderMap.isEmpty()){
+                processDynamicOrder(defaultOrderMap,valueMap);
+            }
+
+            return super.getOrderMap(valueMap);
+        }
+
+        private void processDynamicOrder(Map<String,String> orderMap,Map<String, Object> valueMap) {
+            Iterator<String> nameIterator = orderMap.keySet().iterator();
+            while(nameIterator.hasNext()){
+                String orderParamName = nameIterator.next();
+                Object orderParamValue = valueMap.get(orderParamName);
+                if(orderParamValue != null){
+                    String orderType = orderParamValue.toString().toUpperCase();
+                    if(OrderType.DESC.name().equals(orderType)){
+                        super.desc(orderMap.get(orderParamName));
+                    }else if(OrderType.ASC.name().equals(orderType)){
+                        super.asc(orderMap.get(orderParamName));
                     }
                 }
             }
-            return super.getOrderMap(valueMap);
         }
 
     }
 
-    public static class GroupBuilder {
+    public class GroupBuilder {
 
         private final String[] filedNames;
         private final OrderBuilder orderBuilder;
-        private HavingBuilder havingBuilder = new HavingBuilder();
+        private HavingBuilder havingBuilder;
 
         public GroupBuilder(String[] filedNames,OrderBuilder orderBuilder) {
             this.filedNames = filedNames;
             this.orderBuilder = orderBuilder;
-        }
-
-        String[] getFiledNames() {
-            return filedNames;
+            this.havingBuilder = new HavingBuilder(orderBuilder);
         }
 
         public HavingBuilder having() {
@@ -238,7 +253,60 @@ public abstract class SelectConditionBuilder extends ConditionBuilder{
 
     }
 
-    public static class HavingBuilder {
+    public class HavingBuilder {
+
+        private final OrderBuilder orderBuilder;
+
+        private ConditionBuilder conditionBuilder;
+
+        HavingBuilder(OrderBuilder orderBuilder){
+            this.orderBuilder = orderBuilder;
+            this.conditionBuilder = new ConditionBuilder(){
+                @Override
+                protected boolean checkRequired(String attrName) {
+                    return SelectConditionBuilder.this.checkRequired(attrName);
+                }
+            };
+        }
+
+        public String toCondition(Map<String,Object> paramMap){
+            String sql = conditionBuilder.toCondition(paramMap, false).trim();
+            if(sql.length() == 0){
+                return "";
+            }
+            //FIXME
+            if(sql.startsWith(LogicType.AND +" "))sql = sql.replaceFirst(LogicType.AND.toString(),"");
+            if(sql.startsWith(LogicType.OR +" "))sql = sql.replaceFirst(LogicType.OR.toString(),"");
+            return " HAVING " + sql;
+        }
+
+        public boolean hasCondition(){
+            return conditionBuilder.hasCondition();
+        }
+
+        public OrderBuilder orderBy(){
+            return orderBuilder;
+        }
+
+        public HavingBuilder and(String fieldName, ConditionType conditionType, String attrName){
+            conditionBuilder.and(fieldName,conditionType,attrName);
+            return this;
+        }
+
+        public HavingBuilder or(String fieldName, ConditionType conditionType, String attrName){
+            conditionBuilder.or(fieldName,conditionType,attrName);
+            return this;
+        }
+
+        public HavingBuilder and(AggregateType type, String fieldName, ConditionType conditionType, String attrName){
+            conditionBuilder.and(type.formatAggregate(fieldName),conditionType,attrName);
+            return this;
+        }
+
+        public HavingBuilder or(AggregateType type,String fieldName, ConditionType conditionType, String attrName){
+            conditionBuilder.or(type.formatAggregate(fieldName),conditionType,attrName);
+            return this;
+        }
 
     }
 

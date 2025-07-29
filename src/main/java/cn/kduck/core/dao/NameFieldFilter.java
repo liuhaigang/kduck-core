@@ -1,10 +1,12 @@
 package cn.kduck.core.dao;
 
+import cn.kduck.core.dao.definition.BeanFieldDef;
+import cn.kduck.core.dao.exception.NoFieldMatchedException;
 import cn.kduck.core.dao.sqlbuilder.AliasField;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
+import java.util.StringJoiner;
 
 /**
  * LiuHG
@@ -32,8 +34,13 @@ public class NameFieldFilter implements FieldFilter{
         }
 
         if(filedList.isEmpty()){
-            Object[] values = fieldList.toArray(new String[0]);
-            throw new RuntimeException("没有匹配任何可用字段，请检查属性名拼写是否正确："+ Arrays.toString(values));
+            StringJoiner fieldNameJoiner = new StringJoiner(",");
+            for (AliasField aliasField : fieldList) {
+                String alias = aliasField.getAlias();
+                BeanFieldDef fieldDef = aliasField.getFieldDef();
+                fieldNameJoiner.add(alias == null ? fieldDef.getAttrName(): alias);
+            }
+            throw new NoFieldMatchedException("没有匹配任何可用字段，请检查属性名拼写是否正确："+ fieldNameJoiner);
         }
 
         return filedList;

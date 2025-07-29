@@ -16,6 +16,7 @@ import java.util.function.Function;
 
 /**
  * LiuHG
+ * 适用于单表增删改查的Service基础类
  */
 public abstract class EntityNameService {
 
@@ -116,16 +117,27 @@ public abstract class EntityNameService {
         return defaultService.listForBean(queryBean, page, filter, bean);
     }
 
+    public <R extends ValueMap> List<R> listForBean(Class<? extends QueryCreator> queryClass, Map<String, Object> paramMap, Function<Map, R> bean) {
+        QuerySupport queryBean = getQuery(queryClass, paramMap);
+        return defaultService.listForBean(queryBean, bean);
+    }
+
+    public <R extends ValueMap> List<R> listForBean(Class<? extends QueryCreator> queryClass, Map<String, Object> paramMap, Page page, Function<Map, R> bean) {
+        QuerySupport queryBean = getQuery(queryClass, paramMap);
+        return defaultService.listForBean(queryBean, page, bean);
+    }
+
+    public <R extends ValueMap> List<R> listForBean(Class<? extends QueryCreator> queryClass, Map<String, Object> paramMap, Page page, FieldFilter filter, Function<Map, R> bean) {
+        QuerySupport queryBean = getQuery(queryClass, paramMap);
+        return defaultService.listForBean(queryBean, page, filter, bean);
+    }
+
     public int[] executeUpdate(SqlObject sqlObject) {
         return defaultService.executeUpdate(sqlObject);
     }
 
     protected final BeanEntityDef getEntityDef(String entityDefName) {
         return defaultService.getEntityDef(entityDefName);
-    }
-
-    protected Log getLogger() {
-        return defaultService.getLogger();
     }
 
     protected final List<BeanFieldDef> getFieldDefList(String entityDefName) {

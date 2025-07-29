@@ -22,12 +22,17 @@ import java.util.UUID;
 public class OperateIdentificationInterceptor implements HandlerInterceptor {
 
     private static ThreadLocal<OperateIdentification> optObject = new ThreadLocal<>();
+    private final int max;
 //    private static ThreadLocal<StopWatch> stopWatchThreadLocal = new ThreadLocal<>();
+
+    public OperateIdentificationInterceptor(int max){
+        this.max = max;
+    }
 
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler)
             throws Exception {
         String oid = UUID.randomUUID().toString().replaceAll("-", "");
-        optObject.set(new OperateIdentification(oid));
+        optObject.set(new OperateIdentification(oid, max));
 //        stopWatchThreadLocal.set(new StopWatch());
         return true;
     }
@@ -43,15 +48,23 @@ public class OperateIdentificationInterceptor implements HandlerInterceptor {
     }
 
     public static class OperateIdentification {
+
+        private final Log logger = LogFactory.getLog(getClass());
+
         private final String uniqueId;
+        private final int max;
         private final List<OperateObject> operateObjectList = new ArrayList<>();
 
-        public OperateIdentification(String uniqueId){
+        public OperateIdentification(String uniqueId,int max){
             this.uniqueId = uniqueId;
+            this.max = max;
         }
 
         public void addOperateObject(OperateObject operateObject){
-
+            if(operateObjectList.size() >= max){
+                logger.debug("不能缓存当前操作对象，已经到达限制数量：" + max);
+                return;
+            }
 //            cleanOperateObject(operateObject);
             operateObjectList.add(operateObject);
         }
@@ -88,7 +101,7 @@ public class OperateIdentificationInterceptor implements HandlerInterceptor {
         public static String getUniqueId(){
             OperateIdentification oid = optObject.get();
             if(oid == null){
-                logger.warn("请通过Controller方式请求后获取操作标识ID，无法对删除的数据进行分组归档");
+                logger.debug("请通过Controller方式请求后获取操作标识ID，无法对删除的数据进行分组归档");
                 return "[GROUP FAIL]";
             }
             return oid.getUniqueId();

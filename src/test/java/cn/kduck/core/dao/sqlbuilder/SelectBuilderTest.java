@@ -61,7 +61,7 @@ public class SelectBuilderTest {
         orgUserEntityDef.setFkBeanEntityDef(new BeanEntityDef[]{userEntityDef,orgEntityDef});
 
         //设置了一个全局条件
-        new QueryConditionContext(Arrays.asList(new UserConditionDefiner()));
+//        new QueryConditionContext(Arrays.asList(new UserConditionDefiner()));
     }
 
     private enum GenderType {
@@ -112,11 +112,14 @@ public class SelectBuilderTest {
         printSql("单表查询-2",sqlBuiler);
 
         sqlBuiler = new SelectBuilder(userEntityDef,paramMap);
-        sqlBuiler.bindFields("",BeanDefUtils.includeField(userEntityDef.getFieldList(),"userId"));
+//        sqlBuiler.bindFields("",BeanDefUtils.includeField(userEntityDef.getFieldList(),"userId"));
+        sqlBuiler.bindFields("","userId");
+        sqlBuiler.bindAggregate("USER_ID",AggregateType.COUNT);
         sqlBuiler.where("USER_NAME", ConditionType.CONTAINS,"userName")
                 .and("USER_NAME",ConditionType.NOT_IN,"userName")
                 .and("USER_NAME",ConditionType.IS_EMPTY);
-        sqlBuiler.bindAliasField("",BeanDefUtils.getByAttrName(userEntityDef.getFieldList(),"gender"),"aaa");
+        sqlBuiler.bindAliasField("",BeanDefUtils.getByAttrName(userEntityDef.getFieldList(),"gender"),"sex");
+        sqlBuiler.bindAlias("USER_ID","uid");
         printSql("单表查询-3",sqlBuiler);
 
         sqlBuiler = new SelectBuilder(userEntityDef, paramMap);
@@ -127,6 +130,13 @@ public class SelectBuilderTest {
         sqlBuiler.from("u",userEntityDef).innerJoinOn("u2",userEntityDef,"userId").where().and("u.USER_NAME", ConditionType.CONTAINS,"userName");
         printSql("单表查询-5",sqlBuiler);
 
+        sqlBuiler = new SelectBuilder(userEntityDef,paramMap);
+//        sqlBuiler.bindFields("",BeanDefUtils.includeField(userEntityDef.getFieldList(),"userId","userName"));
+        sqlBuiler.bindFields("","userId","userName");
+        sqlBuiler.bindAggregate("USER_NAME",AggregateType.COUNT);
+        sqlBuiler.bindAlias("USER_ID","uid");
+        sqlBuiler.bindAlias("USER_NAME","uname");
+        printSql("单表查询-6",sqlBuiler);
     }
 
     @Test
@@ -134,14 +144,25 @@ public class SelectBuilderTest {
         Map<String, Object> paramMap = ParamMap.create("userName", "刚").set("age","12").toMap();
 
         SelectBuilder sqlBuiler = new SelectBuilder(paramMap);
-        sqlBuiler.bindFields("a",userEntityDef.getFieldList())
-                .bindFields("b", BeanDefUtils.excludeField(orgUserEntityDef.getFieldList(),"userId"));
-//        sqlBuiler.bindFields("a").bindFields(true,"b","orgUserId");
+//        sqlBuiler.bindFields("a",userEntityDef.getFieldList())
+//                .bindFields("b", BeanDefUtils.excludeField(orgUserEntityDef.getFieldList(),"userId"));
+        sqlBuiler.bindFields("a").bindFields("b",false,"orgUserId");
 //        sqlBuiler.bindAlias("a.USER_ID","id");
         sqlBuiler.from("a",userEntityDef).innerJoin("b",orgUserEntityDef)
         .where().and("a.USER_NAME", ConditionType.BEGIN_WITH,"userName").or("a.AGE", ConditionType.IS_NOT_EMPTY);
         sqlBuiler.bindAggregate("a.AGE", AggregateType.COUNT);
         printSql("两表查询",sqlBuiler);
+
+        Map<String, Object> orgParamMap = ParamMap.create("orgName", "刚").toMap();
+
+        SelectBuilder orgSqlBuiler = new SelectBuilder(orgParamMap);
+        orgSqlBuiler.bindFields("a",orgEntityDef.getFieldList())
+                .bindFields("b", BeanDefUtils.includeField(orgEntityDef.getFieldList(),"orgName"));
+        orgSqlBuiler.bindAlias("b.org_name","orgLhg");
+        orgSqlBuiler.from("a",orgEntityDef).innerJoinOn("b",orgEntityDef,"orgId")
+                .where().and("a.ORG_NAME", ConditionType.BEGIN_WITH,"orgName");
+//        orgSqlBuiler.bindAggregate("a.AGE", AggregateType.COUNT);
+        printSql("自关联两表查询",orgSqlBuiler);
     }
 
     @Test
@@ -151,7 +172,8 @@ public class SelectBuilderTest {
         paramMap.put("gender","1");
 
         SelectBuilder sqlBuiler = new SelectBuilder(paramMap);
-        sqlBuiler.bindFields("a",userEntityDef.getFieldList());
+//        sqlBuiler.bindFields("a",userEntityDef.getFieldList());
+        sqlBuiler.bindFields("a");
         sqlBuiler.from("a",userEntityDef).innerJoin("b",orgUserEntityDef).leftJoin("c",orgEntityDef).where().
                 and("a.USER_NAME", ConditionType.CONTAINS,"userName")
                 .and("a.GENDER", ConditionType.EQUALS,"gender");
@@ -159,12 +181,14 @@ public class SelectBuilderTest {
 
         paramMap.put("orgId","orgIdValue");
         sqlBuiler = new SelectBuilder(paramMap);
-        sqlBuiler.bindFields("a",userEntityDef.getFieldList());
+//        sqlBuiler.bindFields("a",userEntityDef.getFieldList());
+        sqlBuiler.bindFields("a");
         sqlBuiler.from("a",userEntityDef).innerJoin("b",orgUserEntityDef).andOn("b.ORG_ID",ConditionType.EQUALS,"orgId").leftJoin("c",orgEntityDef).where().and("a.USER_NAME", ConditionType.CONTAINS,"userName");
         printSql("三表查询（多join条件）",sqlBuiler);
 
         sqlBuiler = new SelectBuilder(paramMap);
-        sqlBuiler.bindFields("a",userEntityDef.getFieldList());
+//        sqlBuiler.bindFields("a",userEntityDef.getFieldList());
+        sqlBuiler.bindFields("a");
         sqlBuiler.from("a",userEntityDef).innerJoin("b",orgUserEntityDef).innerJoinOn("c",orgEntityDef,"userId:orgId",userEntityDef).where().and("a.USER_NAME", ConditionType.CONTAINS,"userName");
         printSql("三表查询（自定义join的实体）",sqlBuiler);
     }
@@ -191,8 +215,9 @@ public class SelectBuilderTest {
         paramMap.put("userName","某某某");
 
         SelectBuilder sqlBuiler = new SelectBuilder(paramMap);
-        sqlBuiler.bindFields("a",userEntityDef.getFieldList())
-                .bindFields("b", BeanDefUtils.excludeField(orgUserEntityDef.getFieldList(),"userId"));
+//        sqlBuiler.bindFields("a",userEntityDef.getFieldList())
+//                .bindFields("b", BeanDefUtils.excludeField(orgUserEntityDef.getFieldList(),"userId"));
+        sqlBuiler.bindFields("a");
         sqlBuiler.bindAggregate("a.USER_NAME",AggregateType.COUNT);
         sqlBuiler.from("a",userEntityDef).innerJoin("b",orgUserEntityDef)
         .where().and("a.USER_NAME", ConditionType.CONTAINS,"userName").groupBy("a.GENDER","a.USER_NAME").orderBy().asc("a.USER_NAME");
@@ -205,8 +230,9 @@ public class SelectBuilderTest {
         Map<String, Object> paramMap = ParamMap.create("userName", "刚").set("age","18").set("orgId","机构Id").set("gender","1").toMap();
 
         SelectBuilder sqlBuiler = new SelectBuilder(paramMap);
-        sqlBuiler.bindFields("a",userEntityDef.getFieldList())
-                .bindFields("b", BeanDefUtils.excludeField(orgUserEntityDef.getFieldList(),"userId"));
+//        sqlBuiler.bindFields("a",userEntityDef.getFieldList())
+//                .bindFields("b", BeanDefUtils.excludeField(orgUserEntityDef.getFieldList(),"userId"));
+        sqlBuiler.bindFields("a");
         sqlBuiler.from("a",userEntityDef).innerJoin("b",orgUserEntityDef)
                 .where().and("a.USER_NAME", ConditionType.BEGIN_WITH,"userName")
                 .groupBegin("a.BIRTHDAY",ConditionType.LESS,"age").and("b.ORG_ID",ConditionType.EQUALS,"orgId");
@@ -331,6 +357,23 @@ public class SelectBuilderTest {
         sqlBuiler.bindAliasField("",BeanDefUtils.getByAttrName(userEntityDef.getFieldList(),"gender"),"aaa");
 //        sqlBuiler.bindFields("","gender:lhg");
         printSql("子查询",sqlBuiler.build());
+    }
+
+    @Test
+    public void t010_GroupByHavingCondition() {
+        Map<String,Object> paramMap = new HashMap<>();
+        paramMap.put("userName","某某某");
+        paramMap.put("gender",1);
+
+        SelectBuilder sqlBuiler = new SelectBuilder(paramMap);
+        sqlBuiler.bindFields("a",userEntityDef.getFieldList())
+                .bindFields("b", BeanDefUtils.excludeField(orgUserEntityDef.getFieldList(),"userId"));
+        sqlBuiler.bindAggregate("a.USER_NAME",AggregateType.COUNT);
+        sqlBuiler.from("a",userEntityDef).innerJoin("b",orgUserEntityDef)
+                .where().and("a.USER_NAME", ConditionType.CONTAINS,"userName").groupBy("a.GENDER","a.USER_NAME")
+                .having().and(AggregateType.COUNT,"a.GENDER",ConditionType.EQUALS,"gender").orderBy().asc("a.USER_NAME");
+
+        printSql("分组查询查询",sqlBuiler);
     }
 
     @Test

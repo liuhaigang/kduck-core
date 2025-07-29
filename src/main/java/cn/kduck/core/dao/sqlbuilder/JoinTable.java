@@ -157,11 +157,11 @@ public class JoinTable {
     }
 
     /**
-     * Join的规范检查，默认不允许关联超过3张表
+     * Join的规范检查，默认不允许关联超过5张表
      */
     private void checkJoin() {
-        if(joinOnList.size() >= 2){
-            throw new RuntimeException("【规范】JOIN不能超过3张表");
+        if(joinOnList.size() >= 4){
+            throw new RuntimeException("【规范】JOIN不能超过5张表");
         }
     }
 
@@ -241,6 +241,44 @@ public class JoinTable {
                 };
             }
             return conditionBuilder;
+        }
+
+        /**
+         * 返回join的属性名，固定返回长度为2的数组
+         * @return
+         */
+        public String[] getJoinAttrName() {
+            if(onAttrName != null){
+                String[] joinSplit = onAttrName.split(":");
+                if(joinSplit.length == 1){
+                    return new String[]{onAttrName,onAttrName};
+                }
+                return joinSplit;
+            }
+            BeanEntityDef[] leftFkFieldList = leftEntityDef.getFkBeanEntityDef();
+            BeanEntityDef[] rightFkFieldList = rightEntityDef.getFkBeanEntityDef();
+
+            BeanFieldDef leftPkFieldDef = leftEntityDef.getPkFieldDef();
+            if(leftFkFieldList == null || leftFkFieldList.length == 0){
+                String attrName = leftPkFieldDef.getAttrName();
+                return new String[]{attrName,attrName};
+            }
+
+            BeanFieldDef rightPkFieldDef = rightEntityDef.getPkFieldDef();
+            if(rightFkFieldList == null || rightFkFieldList.length == 0){
+                String attrName = rightPkFieldDef.getAttrName();
+                return new String[]{attrName,attrName};
+            }
+
+            for (BeanEntityDef beanEntityDef : rightFkFieldList) {
+                if(beanEntityDef == leftEntityDef){
+                    String attrName = leftPkFieldDef.getAttrName();
+                    return new String[]{attrName,attrName};
+                }
+            }
+
+            String attrName = rightPkFieldDef.getAttrName();
+            return new String[]{attrName,attrName};
         }
 
         public String getLeftTable() {

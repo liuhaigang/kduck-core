@@ -1,5 +1,10 @@
 package cn.kduck.core.web.json;
 
+import cn.kduck.core.utils.JsonUtils;
+
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * 统一的接口返回对象，以Json形式呈现，并包含data、code、message属性。</p>
  * data用于返回请求的数据，code用于返回请求的状态；该状态与HTTP的状态码不同，该编码仅在成功请求时，用于请求操作的业务状态的标识，成功返回{@link JsonObject#SUCCESS}，
@@ -76,5 +81,34 @@ public class JsonObject {
 
     public void setData(Object data) {
         this.data = data;
+    }
+
+    /**
+     * 此方法便于添加返回的键值对。如果调用了该方法设置键值对，表示JsonObject中的data属性对象类型即为Map类型。
+     * 如果之前已经通过setData方法设置了其他非Map对象，则不能通过该方法设置新键值对。
+     * @param name
+     * @param value
+     */
+    public JsonObject addValue(String name,Object value){
+        if(data == null){
+            Map<String,Object> newData = new HashMap();
+            newData.put(name,value);
+            setData(newData);
+        }else if(data instanceof Map){
+            ((Map)data).put(name,value);
+        }else if (this == SUCCESS || this == FAIL){
+            throw new UnsupportedOperationException("不允许调用SUCCESS或FAIL单例对象的addValue方法，请通过new JsonObject()的方式构造实例");
+        }else{
+            throw new UnsupportedOperationException("当前JsonObject中的data属性不为null且不是Map对象，不能执行addValue方法添加键值对");
+        }
+        return this;
+    }
+
+    /**
+     * 将当前对象返回json字符串形式
+     * @return
+     */
+    public String toJson(){
+        return JsonUtils.toJsonString(this);
     }
 }

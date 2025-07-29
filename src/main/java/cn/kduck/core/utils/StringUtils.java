@@ -84,47 +84,34 @@ public final class StringUtils {
 		return sb.toString();
 	}
 	
-	public static String lowerCaseWithSeparator(String str,String separator){
+	public static String lowerCaseWithSeparator(String str,char separator){
+		return caseWithSeparator(str,separator,false);
+	}
+	
+	public static String upperCaseWithSeparator(String str,char separator){
+		return caseWithSeparator(str,separator,true);
+	}
+
+	private static String caseWithSeparator(String str,char separator,boolean firstUpper){
 		if(str == null){
 			return "";
 		}
-		separator = separator == null?"":separator;
-		
+
 		char[] charArray = str.toCharArray();
 		StringBuilder resultBuilder = new StringBuilder();
-		boolean upper = false;
 		for (int i = 0; i < charArray.length; i++) {
-			if(i != 0 && charArray[i] == separator.charAt(0)){
-				upper = true;
+			if(i != 0 && charArray[i] == separator){
+				firstUpper = !firstUpper;
 				continue;
 			}
-			if(upper){
+			if(firstUpper){
 				resultBuilder.append(Character.toUpperCase(charArray[i]));
-				upper = false;
+				firstUpper = !firstUpper;
 			}else{
 				resultBuilder.append(Character.toLowerCase(charArray[i]));
 			}
 		}
 		return resultBuilder.toString();
-	}
-	
-	public static String upperCaseWithSeparator(String str,String separator){
-		if(str == null){
-			return "";
-		}
-		separator = separator == null?"":separator;
-		
-		char[] charArray = str.toCharArray();
-		StringBuilder result = new StringBuilder();
-		for (int i = 0; i < charArray.length; i++) {
-			if(i != 0 &&  
-					charArray[i] == Character.toUpperCase(charArray[i]) && 
-					charArray[i-1] != Character.toUpperCase(charArray[i-1])){
-				result.append(separator);
-			}
-			result.append(Character.toUpperCase(charArray[i]));
-		}
-		return result.toString();
 	}
 
 	public static boolean hasLowerCaseChar(String text){
@@ -138,6 +125,9 @@ public final class StringUtils {
 	}
 
 	public static boolean contain(String[] array,String str){
+		if(array == null){
+			return false;
+		}
 		for (int i = 0; i < array.length; i++) {
 			if(array[i].equals(str)){
 				return true;

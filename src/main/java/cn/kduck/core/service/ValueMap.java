@@ -3,6 +3,7 @@ package cn.kduck.core.service;
 import cn.kduck.core.service.ParamMap.Param;
 import cn.kduck.core.dao.query.QuerySupport;
 import cn.kduck.core.dao.query.formater.ValueFormatter;
+import cn.kduck.core.utils.ConversionUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import cn.kduck.core.utils.ValueMapUtils;
 import org.springframework.beans.BeanUtils;
@@ -46,8 +47,9 @@ public class ValueMap extends HashMap<String,Object> {
                 if(value != null) {
                     PropertyDescriptor propertyDescriptor = BeanUtils.getPropertyDescriptor(targetClass, keyName);
                     Method writeMethod = propertyDescriptor.getWriteMethod();
+                    Class<?> propertyType = propertyDescriptor.getPropertyType();
                     try {
-                        writeMethod.invoke(targetObject,value);
+                        writeMethod.invoke(targetObject, ConversionUtils.convert(value,propertyType));
                     } catch (Exception e) {
                         throw new RuntimeException("根据" + targetClass.getName() +"转换错误：name=" + keyName +",value=" + value,e);
                     }
@@ -258,4 +260,25 @@ public class ValueMap extends HashMap<String,Object> {
         return param.toMap();
     }
 
+    /**
+     * 将指定的属性从当前ValueMap中删除
+     * @param names
+     */
+    public void removeValue(String... names){
+        for (String name : names) {
+            super.remove(name);
+        }
+    }
+
+    /**
+     * 将指定的属性名设置值为null，如果指定的name在当前的ValueMap中不存在，则忽略
+     * @param names
+     */
+    public void setNullValue(String... names){
+        for (String name : names) {
+            if(containsKey(name)){
+                setValue(name,null);
+            }
+        }
+    }
 }

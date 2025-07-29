@@ -1,30 +1,32 @@
 package cn.kduck.core.configuration;
 
+import cn.kduck.core.KduckProperties;
+import cn.kduck.core.KduckProperties.ShowSqlProperties;
 import cn.kduck.core.dao.DefaultDeleteArchiveHandler;
 import cn.kduck.core.dao.DeleteArchiveHandler;
 import cn.kduck.core.dao.JdbcEntityDao;
 import cn.kduck.core.dao.datasource.DataSourceMatcher;
 import cn.kduck.core.dao.datasource.DataSourceSwitch;
 import cn.kduck.core.dao.datasource.DynamicDataSource;
-import cn.kduck.core.dao.datasource.DynamicDataSourceProperties;
 import cn.kduck.core.dao.datasource.condition.RequestMethodMatcher;
 import cn.kduck.core.dao.definition.BeanDefDepository;
 import cn.kduck.core.dao.definition.BeanDefSource;
-import cn.kduck.core.dao.definition.DefaultFieldAliasGenerator;
-import cn.kduck.core.dao.definition.DefaultTableAliasGenerator;
-import cn.kduck.core.dao.definition.FieldAliasGenerator;
 import cn.kduck.core.dao.definition.MemoryBeanDefDepository;
-import cn.kduck.core.dao.definition.TableAliasGenerator;
 import cn.kduck.core.dao.definition.impl.JdbcBeanDefSource;
+import cn.kduck.core.dao.dialect.DatabaseDialect;
 import cn.kduck.core.dao.id.IdGenerator;
-import cn.kduck.core.dao.id.impl.SnowFlakeGenerator;
-import cn.kduck.core.dao.id.impl.SnowFlakeGenerator.SnowFlakeProperties;
+import cn.kduck.core.dao.id.impl.KduckIdGenerator;
+import cn.kduck.core.dao.id.impl.KduckIdGenerator.KduckSnowFlakeProperties;
+import cn.kduck.core.dao.sqllog.ShowSqlLogger;
+import cn.kduck.core.dao.sqllog.impl.DefaultShowSqlLogger;
 import cn.kduck.core.utils.StringUtils;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionOutcome;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.condition.SpringBootCondition;
 import org.springframework.context.annotation.*;
 import org.springframework.core.env.Environment;
@@ -37,25 +39,17 @@ import java.util.Map.Entry;
 /**
  * LiuHG
  */
-@Configuration
 public class DaoConfiguration {
+    private final KduckProperties kduckProperties;
+
+    public DaoConfiguration(KduckProperties kduckProperties){
+        this.kduckProperties = kduckProperties;
+    }
 
     @Bean
     @ConditionalOnMissingBean(IdGenerator.class)
-    public IdGenerator idGenerator(SnowFlakeProperties snowFlakeProperties){
-       return new SnowFlakeGenerator(snowFlakeProperties.getWorkerId(),snowFlakeProperties.getDataCenterId(),snowFlakeProperties.getSequence());
-    }
-
-    @Bean
-    @ConditionalOnMissingBean(FieldAliasGenerator.class)
-    public FieldAliasGenerator attrNameGenerator(){
-        return new DefaultFieldAliasGenerator();
-    }
-
-    @Bean
-    @ConditionalOnMissingBean(TableAliasGenerator.class)
-    public TableAliasGenerator tableAliasGenerator(){
-        return new DefaultTableAliasGenerator();
+    public IdGenerator idGenerator(KduckSnowFlakeProperties kduckSnowFlakeProperties){
+        return new KduckIdGenerator(kduckSnowFlakeProperties.getServerIp(),kduckSnowFlakeProperties.getRegions());
     }
 
     @Bean
@@ -66,8 +60,9 @@ public class DaoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean(BeanDefSource.class)
-    public BeanDefSource beanDefSource(){
-        return new JdbcBeanDefSource();
+    public BeanDefSource beanDefSource(DataSource dataSource){
+        JdbcBeanDefSource jdbcBeanDefSource = new JdbcBeanDefSource(dataSource,kduckProperties.getDefinition());
+        return jdbcBeanDefSource;
     }
 
     @Bean
@@ -78,8 +73,32 @@ public class DaoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean(JdbcEntityDao.class)
-    public JdbcEntityDao jdbcEntityDao(){
-        return new JdbcEntityDao();
+    public JdbcEntityDao jdbcEntityDao(DataSource dataSource,List<DatabaseDialect> databaseDialectList,
+                                       @Autowired(required = false) ShowSqlLogger sqlLogger,
+                                       @Lazy DeleteArchiveHandler deleteArchiveHandler){
+        JdbcEntityDao jdbcEntityDao = new JdbcEntityDao(dataSource,databaseDialectList);
+
+        if(sqlLogger != null){
+            jdbcEntityDao.setSqlLogger(sqlLogger);
+        }
+
+        ShowSqlProperties showSqlProperties = kduckProperties.getShowSql();
+        if(showSqlProperties != null){
+            jdbcEntityDao.setShowSqlMode(showSqlProperties.getMode());
+        }
+
+        //deleteArchiveHandler由于使用了DefaultService进行了表数据持久，会导致循环依赖，因此需要标记为@Lazy懒加载
+        jdbcEntityDao.setDeleteArchiveHandler(deleteArchiveHandler);
+
+        return jdbcEntityDao;
+    }
+
+
+    @Bean
+    @ConditionalOnMissingBean(ShowSqlLogger.class)
+    @ConditionalOnProperty(prefix = "kduck.show-sql",name = "enabled",havingValue = "true")
+    public ShowSqlLogger showSqlLogger(){
+        return new DefaultShowSqlLogger(System.out,kduckProperties.getShowSql());
     }
 
 //    @Bean
@@ -98,7 +117,7 @@ public class DaoConfiguration {
     @Bean
     @Conditional(SpringDataSourceUnavailableCondition.class)
     @Primary
-    public DataSource dataSource(DynamicDataSourceProperties properties) {
+    public DataSource dataSource(KduckProperties properties) {
 
         DynamicDataSource dataSource = new DynamicDataSource();
         Map<Object,Object> dataSourceMap = new HashMap<>();

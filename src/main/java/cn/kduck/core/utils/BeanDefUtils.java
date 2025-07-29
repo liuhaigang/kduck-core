@@ -103,7 +103,7 @@ public final class BeanDefUtils {
 
     public static BeanFieldDef getByColName(List<BeanFieldDef> fieldList, String columnName){
         for (BeanFieldDef fieldDef:fieldList) {
-            if (fieldDef.getFieldName().equals(columnName)) {
+            if (fieldDef.getFieldName().equalsIgnoreCase(columnName)) {
                 return fieldDef;
             }
         }

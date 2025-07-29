@@ -1,6 +1,6 @@
 package cn.kduck.core.dao.definition;
 
-import cn.kduck.core.service.exception.PrimaryKeyNotFoundException;
+import cn.kduck.core.dao.exception.PrimaryKeyNotFoundException;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -57,6 +57,16 @@ public class BeanEntityDef {
         }
         return null;
     }
+
+    public BeanFieldDef getFieldDefByFieldName(String fieldName) {
+        for (BeanFieldDef fieldDef:fieldList) {
+            if(fieldName.equalsIgnoreCase(fieldDef.getFieldName())){
+                return fieldDef;
+            }
+        }
+        return null;
+    }
+
     public BeanFieldDef getPkFieldDef() {
         if(pkFieldDef != null){
             return pkFieldDef;

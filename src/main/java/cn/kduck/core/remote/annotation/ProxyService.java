@@ -9,6 +9,8 @@ public @interface ProxyService {
 
     String serviceName();
 
+    String clientPrefix() default "";
+
     String[] servicePaths() default {};
 
 //    int version();

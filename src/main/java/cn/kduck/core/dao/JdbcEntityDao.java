@@ -1,79 +1,71 @@
 package cn.kduck.core.dao;
 
-import cn.kduck.core.dao.datasource.DataSourceSwitch;
-import cn.kduck.core.dao.definition.BeanDefDepository;
-import cn.kduck.core.dao.definition.BeanEntityDef;
-import cn.kduck.core.dao.definition.BeanFieldDef;
-import cn.kduck.core.dao.definition.FieldAliasGenerator;
-import cn.kduck.core.dao.definition.TableAliasGenerator;
-import cn.kduck.core.dao.sqlbuilder.SignatureInfo;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import cn.kduck.core.KduckProperties.ShowSqlMode;
+import cn.kduck.core.dao.definition.*;
 import cn.kduck.core.dao.dialect.DatabaseDialect;
 import cn.kduck.core.dao.query.QuerySupport;
 import cn.kduck.core.dao.query.formater.ValueFormatter;
+import cn.kduck.core.dao.sqllog.ShowSqlLogger;
+import cn.kduck.core.dao.sqllog.impl.EmptyShowSqlLogger;
 import cn.kduck.core.dao.utils.TypeUtils;
 import cn.kduck.core.utils.BeanDefUtils;
-import cn.kduck.core.utils.SpringBeanUtils;
 import cn.kduck.core.web.interceptor.OperateIdentificationInterceptor.OidHolder;
-import cn.kduck.core.web.interceptor.OperateIdentificationInterceptor.OperateIdentification;
-import cn.kduck.core.web.interceptor.operateinfo.OperateObject;
-import cn.kduck.core.web.interceptor.operateinfo.OperateObject.OperateType;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.ansi.AnsiColor;
-import org.springframework.boot.ansi.AnsiElement;
-import org.springframework.boot.ansi.AnsiOutput;
-import org.springframework.boot.ansi.AnsiStyle;
-import org.springframework.jdbc.core.*;
+import org.springframework.jdbc.core.ArgumentPreparedStatementSetter;
+import org.springframework.jdbc.core.BatchPreparedStatementSetter;
+import org.springframework.jdbc.core.ColumnMapRowMapper;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.PreparedStatementCreator;
+import org.springframework.jdbc.core.RowMapperResultSetExtractor;
+import org.springframework.jdbc.core.SqlParameterValue;
+import org.springframework.jdbc.core.SqlTypeValue;
+import org.springframework.jdbc.core.StatementCreatorUtils;
 import org.springframework.jdbc.support.JdbcUtils;
-import org.springframework.util.Assert;
+import org.springframework.jdbc.support.lob.DefaultLobHandler;
+import org.springframework.jdbc.support.lob.LobHandler;
 
+import javax.sql.DataSource;
 import java.sql.*;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.*;
+import java.util.Date;
 
 /**
  * @author LiuHG
  */
 public class JdbcEntityDao {
 
-    private ObjectMapper jsonMapper = new ObjectMapper();
-
-    @Autowired
     private JdbcTemplate jdbcTemplate;
-
-//    @Autowired
-    private BeanDefDepository beanDefDepository;
-
-    @Autowired
-    private FieldAliasGenerator attrNameGenerator;
-
-    @Autowired
-    private TableAliasGenerator tableAliasGenerator;
-
-    @Autowired
     private List<DatabaseDialect> databaseDialectList;
 
-    @Autowired(required = false)
+    private LobHandler lobHandler = new DefaultLobHandler();
+
+    private FieldAliasGenerator attrNameGenerator = new DefaultFieldAliasGenerator();
+    private TableAliasGenerator tableAliasGenerator = new DefaultTableAliasGenerator();
+
     private DeleteArchiveHandler deleteArchiveHandler;
 
-    @Value("${kduck.showSql.enabled:false}")
-    private boolean showSql;
+    private ShowSqlLogger sqlLogger = new EmptyShowSqlLogger();
+    private ShowSqlMode showSqlMode = ShowSqlMode.SQL;
 
-    @Value("${kduck.showSql.mode:SQL}")
-    private ShowSqlMode showSqlMode;
+    private Map<DataSource,DatabaseDialect> dialectCache = new HashMap<>(3);
 
-
-    private void addOperateObject(OperateType type, BeanEntityDef entityDef, Map<String, Object> valueMap){
-        OperateIdentification operateIdentification = OidHolder.getOperateIdentification();
-
-        if(operateIdentification == null) {
-            // 未经过审核过滤器，无法将操作对象记录进审计信息中
-            return;
-        }
-
-        operateIdentification.addOperateObject(new OperateObject(type,entityDef, Collections.unmodifiableMap(valueMap)));
+    public JdbcEntityDao(DataSource dataSource, List<DatabaseDialect> databaseDialectList){
+        this.databaseDialectList = databaseDialectList;
+        this.jdbcTemplate = new JdbcTemplate(dataSource);
     }
+
+//    private void addOperateObject(OperateType type, BeanEntityDef entityDef, Map<String, Object> valueMap){
+//        OperateIdentification operateIdentification = OidHolder.getOperateIdentification();
+//
+//        if(operateIdentification == null) {
+//            // 未经过审核过滤器，无法将操作对象记录进审计信息中
+//            return;
+//        }
+//
+//        operateIdentification.addOperateObject(new OperateObject(type,entityDef, Collections.unmodifiableMap(valueMap)));
+//    }
 
     /**
      * 更新类SQL(新增、删除、修改)执行，新增方法应当提前设置好主键值，如果数据库为自增类型，该方法无法获取主键值，如需要得到返回的主键值，
@@ -96,49 +88,56 @@ public class JdbcEntityDao {
      * @see #execute(SqlObject)
      */
     public int[] execute(SqlObject sqlObject,List<Object> keyHolder) {
-//        boolean autoGeneratedKeys = true;
         processDeleteArchive(sqlObject);
 
         long startTime = System.currentTimeMillis();
-        if (showSql && showSqlMode == ShowSqlMode.SQL) {
-            printSql(-1,sqlObject.getSql(), sqlObject.getParamValueList(),null);
+        if (showSqlMode == ShowSqlMode.SQL) {
+            sqlLogger.sqlLog(sqlObject.getSql(), sqlObject.getParamValueList());
         }
 
-        KduckPreparedStatementCreator psc = new KduckPreparedStatementCreator(sqlObject,keyHolder != null);
-//        KeyHolder keyHolder = new GeneratedKeyHolder();
-        int[] returnResult = jdbcTemplate.execute(psc,ps ->{
-            int[] rows;
-            if(psc.isBatch()){
-                rows = ps.executeBatch();
-            }else{
-                rows = new int[]{ps.executeUpdate()};
-            }
+        int[] returnResult;
+        try{
+            KduckPreparedStatementCreator psc = new KduckPreparedStatementCreator(sqlObject,keyHolder != null);
+            returnResult = jdbcTemplate.execute(psc,ps ->{
+                int[] rows;
+                if(psc.isBatch()){
+                    rows = ps.executeBatch();
+                }else{
+                    rows = new int[]{ps.executeUpdate()};
+                }
 
-            if(keyHolder != null){
+                if(keyHolder != null){
 //                List<Map<String, Object>> generatedKeys = keyHolder.getKeyList();
 //                generatedKeys.clear();
-                keyHolder.clear();
-                ResultSet keys = ps.getGeneratedKeys();
-                if (keys != null) {
-                    try {
-                        RowMapperResultSetExtractor<Map<String, Object>> rse =
-                                new RowMapperResultSetExtractor<>(new ColumnMapRowMapper(), 1);
+                    keyHolder.clear();
+                    ResultSet keys = ps.getGeneratedKeys();
+                    if (keys != null) {
+                        try {
+                            RowMapperResultSetExtractor<Map<String, Object>> rse =
+                                    new RowMapperResultSetExtractor<>(new ColumnMapRowMapper(), 1);
 //                        generatedKeys.addAll(rse.extractData(keys));
-                        List<Map<String, Object>> keyMapList = rse.extractData(keys);
-                        keyMapList.stream().forEach(keyMap ->keyHolder.addAll(keyMap.values()));
-                    }
-                    finally {
-                        JdbcUtils.closeResultSet(keys);
+                            List<Map<String, Object>> keyMapList = rse.extractData(keys);
+                            keyMapList.stream().forEach(keyMap ->keyHolder.addAll(keyMap.values()));
+                        }
+                        finally {
+                            JdbcUtils.closeResultSet(keys);
+                        }
                     }
                 }
+                return rows;
+            });
+        }catch (Exception e){
+            if (showSqlMode == ShowSqlMode.SQL_ON_ERROR) {
+                sqlLogger.errorSqlLog(sqlObject.getSql(), sqlObject.getParamValueList(),e);
             }
-            return rows;
-        });
+            throw e;
+        }
+
 
         //如果输出sql模式为显示执行时间，则仅能在操作后输出sql
-        if (showSql && showSqlMode == ShowSqlMode.TIME_SQL) {
+        if (showSqlMode == ShowSqlMode.TIME_SQL || showSqlMode == ShowSqlMode.JUST_SLOW_SQL) {
             long endTime = System.currentTimeMillis();
-            printSql((endTime-startTime),sqlObject.getSql(), sqlObject.getParamValueList(),null);
+            sqlLogger.timeSqlLog((endTime-startTime),sqlObject.getSql(), sqlObject.getParamValueList());
         }
         return returnResult;
     }
@@ -165,10 +164,10 @@ public class JdbcEntityDao {
             List<Object> paramValueList = sqlObject.getParamValueList();
 
             List<Map<String, Object>> list = jdbcTemplate.queryForList(selectSql,paramValueList.toArray());
-            deleteArchiveHandler.doArchive(OidHolder.getUniqueId(),entityDef,list);
-            for (Map<String, Object> map : list) {
-                addOperateObject(OperateType.DELETE,entityDef,map);
-            }
+            deleteArchiveHandler.doArchive(OidHolder.getUniqueId(),entityDef.getEntityCode(),list);
+//            for (Map<String, Object> map : list) {
+//                addOperateObject(OperateType.DELETE,entityDef,map);
+//            }
         }
     }
 
@@ -180,22 +179,26 @@ public class JdbcEntityDao {
         private final boolean isBatch;
         private boolean paramArray;
 
-        public KduckPreparedStatementCreator(SqlObject sqlObject,boolean returnKey){
+        public KduckPreparedStatementCreator(SqlObject sqlObject,boolean returnKey ){
             this.sql = sqlObject.getSql();
-            paramValueList = sqlObject.getParamValueList();
+            this.paramValueList = sqlObject.getParamValueList();
             this.returnKey = returnKey;
-            Assert.isTrue(paramValueList != null && !paramValueList.isEmpty(),"参数列表不能为空");
-            Object value = paramValueList.get(0);
-            paramArray = value != null && value.getClass().isArray();
-            if(paramArray){
-                for (Object o : paramValueList) {
-                    if(o.getClass() != value.getClass()){
-                        paramArray = false;
-                        break;
+            //            Assert.isTrue(paramValueList != null && !paramValueList.isEmpty(),"参数列表不能为空");
+            if(paramValueList.size() > 0){
+                Object value = paramValueList.get(0);
+                paramArray = value != null && value.getClass().isArray();
+                if(paramArray){
+                    for (Object o : paramValueList) {
+                        if(o.getClass() != value.getClass()){
+                            paramArray = false;
+                            break;
+                        }
                     }
                 }
+                isBatch = paramArray && paramValueList.size() > 1;
+            }else{
+                isBatch = false;
             }
-            isBatch = paramArray && paramValueList.size() > 1? true : false;
         }
 
         @Override
@@ -262,61 +265,18 @@ public class JdbcEntityDao {
         }
     }
 
-
-    //################################################## BEGIN
-
-//    public int[] execute(SqlObject sqlObject) {
-//        String sql = sqlObject.getSql();
-//        List<Object> valueList = sqlObject.getParamValueList();
-//
-//        if(sqlObject.getSql().startsWith("DELETE") && deleteArchiveHandler != null) {
-//            BeanEntityDef entityDef = sqlObject.getEntityDef();
-//
-//            String selectSql = sqlObject.getSql().replaceFirst("DELETE","SELECT *");
-//            List<Object> paramValueList = sqlObject.getParamValueList();
-//
-//            List<Map<String, Object>> list = jdbcTemplate.queryForList(selectSql,paramValueList.toArray());
-//            deleteArchiveHandler.doArchive(OidHolder.getUniqueId(),entityDef,list);
-//            for (Map<String, Object> map : list) {
-//                addOperateObject(OperateType.DELETE,entityDef,map);
-//            }
-//        }
-//
-//        long startTime = System.currentTimeMillis();
-//        if (showSql && showSqlMode == ShowSqlMode.SQL) {
-//            printSql(-1,sql, valueList,null);
-//        }
-//
-//        Object value = valueList.get(0);
-//
-//
-//        int[] returnResult;
-//        if(value != null && value.getClass().isArray()){
-//            if(valueList.size() == 1){
-//                int result = jdbcTemplate.update(sql, (Object[]) value);
-//                returnResult = new int[]{result};
-//            } else {
-//                List<Object[]> arrayList = new ArrayList<>(valueList.size());
-//                for (Object values : valueList) {
-//                    arrayList.add((Object[]) values);
-//                }
-//                returnResult = jdbcTemplate.batchUpdate(sql, arrayList);
-//            }
-//        }else{
-//            returnResult = new int[]{jdbcTemplate.update(sql, valueList.toArray())};
-//        }
-//        if (showSql && showSqlMode == ShowSqlMode.TIME_SQL) {
-//            long endTime = System.currentTimeMillis();
-//            printSql((endTime-startTime),sql, valueList,null);
-//        }
-//        return returnResult;
-//    }
-
-    //################################################## END
-
     public List<Map<String,Object>> executeQuery(QuerySupport queryBean, int firstIndex, int maxRow, FieldFilter filter){
+        return executeQuery(queryBean,firstIndex,maxRow,filter,null);
+    }
+
+    public void executeQuery(QuerySupport queryBean, FieldFilter filter, BatchDataCallbackHandler batchDataCallbackHandler){
+        executeQuery(queryBean,-1,-1,filter, batchDataCallbackHandler);
+    }
+
+    private List<Map<String,Object>> executeQuery(QuerySupport queryBean, int firstIndex, int maxRow, FieldFilter filter,
+                                                  BatchDataCallbackHandler batchDataCallbackHandler){
         SqlObject sqlObject = queryBean.getQuery(filter);
-        Map<String, ValueFormatter> valueFormaters = queryBean.getValueFormater();
+        Map<String, ValueFormatter> valueFormatters = queryBean.getValueFormater();
 
         String sql = sqlObject.getSql();
 
@@ -328,61 +288,90 @@ public class JdbcEntityDao {
 
         List<Object> paramList = sqlObject.getParamValueList();
 
-        SignatureInfo signInfo = (queryBean instanceof SignatureInfo) ? (SignatureInfo)queryBean : null;
         long startTime = System.currentTimeMillis();
-        if(showSql && showSqlMode == ShowSqlMode.SQL){
-            printSql(-1,sql,paramList,signInfo);
+        if(showSqlMode == ShowSqlMode.SQL){
+            sqlLogger.sqlLog(sql,paramList,queryBean.generateBy());
         }
 
-        List<Map<String, Object>> queryResult = jdbcTemplate.query(sql, (rs) -> {
-            List<BeanFieldDef> fieldDefList = sqlObject.getFieldDefList();
-            List<Map<String, Object>> recordMapList = new ArrayList<>();
-            while (rs.next()) {
-                Map<String, Object> recordMap = resultSet2Map(rs, fieldDefList);
-                if (valueFormaters != null && !valueFormaters.isEmpty()) {
-                    Iterator<String> keys = valueFormaters.keySet().iterator();
-                    while (keys.hasNext()) {
-                        String attrName = keys.next();
-                        if (recordMap.containsKey(attrName)) {
-                            ValueFormatter vf = valueFormaters.get(attrName);
-                            Object v = recordMap.get(attrName);
-                            recordMap.put(attrName, vf.format(v, Collections.unmodifiableMap(recordMap)));
+        List<Map<String, Object>> queryResult;
+        try{
+            queryResult = jdbcTemplate.query(sql, (rs) -> {
+                List<BeanFieldDef> fieldDefList = sqlObject.getFieldDefList();
+                List<Map<String, Object>> recordMapList = new ArrayList<>();
+                while (rs.next()) {
+                    Map<String, Object> recordMap = resultSet2Map(rs, fieldDefList);
+                    if (valueFormatters != null && !valueFormatters.isEmpty()) {
+                        for (String attrName : valueFormatters.keySet()) {
+                            if (recordMap.containsKey(attrName)) {
+                                ValueFormatter vf = valueFormatters.get(attrName);
+                                Object v = recordMap.get(attrName);
+                                recordMap.put(attrName, vf.format(v, Collections.unmodifiableMap(recordMap)));
+                            }
                         }
                     }
+                    recordMapList.add(recordMap);
+                    if(batchDataCallbackHandler != null && recordMapList.size() == batchDataCallbackHandler.batchSize()){
+                        Map[] recordMapArray = recordMapList.stream().toArray(LinkedHashMap[]::new);
+                        batchDataCallbackHandler.processBatchData(recordMapArray);
+                        recordMapList.clear();
+                    }
                 }
-                recordMapList.add(recordMap);
-            }
-            return recordMapList;
-        }, paramList.toArray());
 
-        if (showSql && showSqlMode == ShowSqlMode.TIME_SQL) {
+                if(batchDataCallbackHandler != null && !recordMapList.isEmpty()){
+                    Map[] recordMapArray = recordMapList.stream().toArray(LinkedHashMap[]::new);
+                    batchDataCallbackHandler.processBatchData(recordMapArray);
+                    recordMapList.clear();
+                }
+                return recordMapList;
+            }, paramList.toArray());
+        }catch (Exception e){
+            if (showSqlMode == ShowSqlMode.SQL_ON_ERROR) {
+                sqlLogger.errorSqlLog(sql, paramList,e,queryBean.generateBy());
+            }
+            throw e;
+        }
+
+        if (showSqlMode == ShowSqlMode.TIME_SQL || showSqlMode == ShowSqlMode.JUST_SLOW_SQL) {
             long endTime = System.currentTimeMillis();
-            printSql((endTime-startTime),sql, paramList,signInfo);
+            sqlLogger.timeSqlLog((endTime-startTime),sql, paramList,queryBean.generateBy());
         }
         return queryResult;
     }
 
     //FIXME 根据数据源对象实例缓存映射数据方言对象
     private String processPage(String sql,int firstIndex, int maxRow) {
-        DatabaseDialect currentDbDialect = null;
-        String dbName = null;
-        try (Connection connection = jdbcTemplate.getDataSource().getConnection()){
-            dbName = connection.getMetaData().getDatabaseProductName();
+        DataSource dataSource = jdbcTemplate.getDataSource();
+        DatabaseDialect currentDbDialect = dialectCache.get(dataSource);
+        if(currentDbDialect == null){
+            String dbName = getDatabaseName(dataSource);
             for (DatabaseDialect databaseDialect : databaseDialectList) {
                 if(databaseDialect.productName().equalsIgnoreCase(dbName)){
                     currentDbDialect = databaseDialect;
+                    dialectCache.put(dataSource,currentDbDialect);
                     break;
                 }
             }
-        } catch (SQLException e) {
-            throw new RuntimeException("获取用户类型错误："+ dbName,e);
+
+            if(currentDbDialect == null){
+                throw new RuntimeException("不支持数据库的分页逻辑："+ dbName);
+            }
         }
 
-        if(currentDbDialect == null){
-            throw new RuntimeException("不支持数据库的分页逻辑："+ dbName);
-        }
         sql = currentDbDialect.pagingSql(sql,firstIndex,maxRow);
         return sql;
+    }
+
+    protected String getDatabaseName(DataSource dataSource){
+        String dbName = null;
+        try (Connection connection = dataSource.getConnection()){
+            dbName = connection.getMetaData().getDatabaseProductName();
+        } catch (SQLException e) {
+            throw new RuntimeException("获取数据库类型错误："+ dbName,e);
+        }
+        if(dbName == null){
+            dbName = "unknow";
+        }
+        return dbName;
     }
 
     /**
@@ -403,26 +392,61 @@ public class JdbcEntityDao {
                 String columnName = metaData.getColumnName(i + 1);
                 String columnLabel = metaData.getColumnLabel(i + 1);
                 BeanFieldDef fieldDef = BeanDefUtils.getByColName(fieldDefList, columnName);
-                if(fieldDef == null){
-//                    throw new RuntimeException("在提供的字段定义集合中未找到指定列的字段定义：" + columnName);
-                    continue;
-                }
-                Object resultValue = JdbcUtils.getResultSetValue(resultSet, i + 1, fieldDef.getJavaType());
 
-                String attrName = fieldDef.getAttrName();
-                if(!columnLabel.equals(columnName)){
+                String attrName;
+                Object resultValue = null;
+                if(fieldDef != null){
+                    if(fieldDef.getJdbcType() == Types.CLOB || fieldDef.getJdbcType() == Types.NCLOB || fieldDef.getJdbcType() == Types.LONGVARCHAR || fieldDef.getJdbcType() == Types.LONGNVARCHAR){
+                        //处理lob字段转换为String
+                        resultValue = lobHandler.getClobAsString(resultSet, i + 1);
+                    }else if(fieldDef.getJdbcType() == Types.BLOB || fieldDef.getJdbcType() == Types.LONGVARBINARY || fieldDef.getJdbcType() == Types.VARBINARY || fieldDef.getJdbcType() == Types.BINARY){
+                        //处理lob字段转换为byte[]
+                        resultValue = lobHandler.getBlobAsBytes(resultSet, i + 1);
+                    } else if(fieldDef.getJdbcType() == Types.TIMESTAMP){
+                        Timestamp timestamp = resultSet.getTimestamp(i + 1);
+                        if(timestamp != null){
+                            resultValue = new Date(timestamp.getTime());
+                        }
+                    } else if(fieldDef.getJdbcType() == Types.DATE){
+                        Date date = resultSet.getDate(i + 1);
+                        if(date != null){
+                            resultValue = new Date(date.getTime());
+                        }
+                    }else{
+                        resultValue = JdbcUtils.getResultSetValue(resultSet, i + 1, fieldDef.getJavaType());
+                    }
+                    attrName = fieldDef.getAttrName();
+                    if(!columnLabel.equals(columnName)){
+                        attrName = columnLabel;
+                    }
+                } else {
                     attrName = columnLabel;
+                    resultValue = JdbcUtils.getResultSetValue(resultSet, i + 1);
                 }
+
                 recordMap.put(attrName, processIdtoString(attrName,resultValue));
             }
 
         }else{
 
             for (int i = 0; i < columnCount; i++) {
+                String columnName = metaData.getColumnName(i + 1);
                 String columnLabel = metaData.getColumnLabel(i + 1);
-                String attrName = attrNameGenerator.genAlias(null,metaData.getTableName(i + 1),columnLabel);
+
+                String attrName;
+                if(columnLabel.equals(columnName)){
+                    attrName = attrNameGenerator.genAlias(null,metaData.getTableName(i + 1),columnLabel);
+                }else{
+                    attrName = columnLabel;
+                }
 
                 Object resultValue = JdbcUtils.getResultSetValue(resultSet, i + 1);
+
+                //如果返回为LocalDateTime对象，则转换为Date对象放入结果集中。
+                if(resultValue instanceof LocalDateTime){
+                    ZonedDateTime zonedDateTime = ((LocalDateTime) resultValue).atZone(ZoneId.systemDefault());
+                    resultValue = Date.from(zonedDateTime.toInstant());
+                }
 
                 recordMap.put(attrName, processIdtoString(attrName,resultValue));
 
@@ -452,22 +476,31 @@ public class JdbcEntityDao {
 
         List<Object> paramList = sqlObject.getParamValueList();
 
-        SignatureInfo signInfo = (queryBean instanceof SignatureInfo) ? (SignatureInfo)queryBean : null;
         long startTime = System.currentTimeMillis();
-        if(showSql && showSqlMode == ShowSqlMode.SQL){
-            printSql(-1,countSql,paramList,signInfo);
+        if(showSqlMode == ShowSqlMode.SQL){
+            sqlLogger.sqlLog(countSql,paramList,queryBean.generateBy());
         }
 
-        Long countResult = jdbcTemplate.query(countSql, (rs) -> {
-            while (rs.next()) {
-                return rs.getLong(1);
+        Long countResult;
+        try{
+            countResult = jdbcTemplate.query(countSql, (rs) -> {
+                long count = 0L;
+                while (rs.next()) {
+                    count = rs.getLong(1);
+                }
+                return count;
+            }, paramList.toArray());
+        }catch (Exception e){
+            if (showSqlMode == ShowSqlMode.SQL_ON_ERROR) {
+                sqlLogger.errorSqlLog(sql, paramList,e,queryBean.generateBy());
             }
-            return 0L;
-        }, paramList.toArray());
+            throw e;
+        }
 
-        if (showSql && showSqlMode == ShowSqlMode.TIME_SQL) {
+
+        if (showSqlMode == ShowSqlMode.TIME_SQL ||  showSqlMode == ShowSqlMode.JUST_SLOW_SQL) {
             long endTime = System.currentTimeMillis();
-            printSql((endTime-startTime),countSql, paramList,signInfo);
+            sqlLogger.timeSqlLog((endTime-startTime),countSql, paramList,queryBean.generateBy());
         }
         return countResult;
     }
@@ -495,12 +528,11 @@ public class JdbcEntityDao {
                 jdbcTemplate.query(selectSql,(ResultSet rs)->{
                     String tableName = rs.getMetaData().getTableName(1);
                     String tableCode = tableAliasGenerator.genAlias(tableName);
-                    BeanEntityDef entityDef = getBeanDefDepository().getEntityDef(tableCode);
 
                     while(rs.next()){
                         resultList.add(resultSet2Map(rs,null));
                     }
-                    deleteArchiveHandler.doArchive(OidHolder.getUniqueId(),entityDef,resultList);
+                    deleteArchiveHandler.doArchive(OidHolder.getUniqueId(),tableCode,resultList);
 
                     return resultList;
                 },valueList.toArray());
@@ -508,21 +540,29 @@ public class JdbcEntityDao {
         }
 
         long startTime = System.currentTimeMillis();
-        if(showSql && showSqlMode == ShowSqlMode.SQL){
-            printSql(-1,"违规范",sql,valueList,null);
+        if(showSqlMode == ShowSqlMode.SQL){
+            sqlLogger.sqlLog(sql,valueList,null,true);
         }
 
-        Integer executeResult = jdbcTemplate.execute(sql, (PreparedStatement statement) -> {
-            for (int i = 0; i < valueList.size(); i++) {
-                Object v = valueList.get(i);
-                statement.setObject(i + 1, v, TypeUtils.jdbcType(v.getClass()));
+        Integer executeResult;
+        try{
+            executeResult = jdbcTemplate.execute(sql, (PreparedStatement statement) -> {
+                for (int i = 0; i < valueList.size(); i++) {
+                    Object v = valueList.get(i);
+                    statement.setObject(i + 1, v, TypeUtils.jdbcType(v.getClass()));
+                }
+                return statement.executeUpdate();
+            });
+        }catch (Exception e){
+            if (showSqlMode == ShowSqlMode.SQL_ON_ERROR) {
+                sqlLogger.errorSqlLog(sql, valueList,e);
             }
-            return statement.executeUpdate();
-        });
+            throw e;
+        }
 
-        if (showSql && showSqlMode == ShowSqlMode.TIME_SQL) {
+        if (showSqlMode == ShowSqlMode.TIME_SQL || showSqlMode == ShowSqlMode.JUST_SLOW_SQL) {
             long endTime = System.currentTimeMillis();
-            printSql((endTime-startTime),sql, valueList,null);
+            sqlLogger.timeSqlLog((endTime-startTime),sql, valueList,null,true);
         }
 
         return executeResult;
@@ -532,113 +572,15 @@ public class JdbcEntityDao {
         return "SELECT COUNT(*) FROM (" + sql + ") k_t";
     }
 
-    private void printSql(long time,String sql,List<Object> params,SignatureInfo signatureInfo){
-        printSql(time,null,sql, params,signatureInfo);
+    public void setSqlLogger(ShowSqlLogger sqlLogger) {
+        this.sqlLogger = sqlLogger;
     }
 
-    protected void printSql(long time,String label, String sql, List<Object> paramList, SignatureInfo signatureInfo){
-        List printParam = new ArrayList(paramList.size());
-        String paramJson;
-        try {
-            for (int i = 0; i < paramList.size(); i++) {
-                Object rowParam = paramList.get(i);
-                if(rowParam.getClass().isArray()){
-                    Object[] paramItems = (Object[])rowParam;
-                    Object[] tempItems = new Object[paramItems.length];
-                    for (int i1 = 0; i1 < paramItems.length; i1++) {
-                        Object paramItem = paramItems[i1];
-                        tempItems[i1] = unwrapParamValue(paramItem);
-                    }
-                    printParam.add(tempItems);
-                }else{
-                    printParam.add(unwrapParamValue(rowParam));
-                }
-            }
-            paramJson =  jsonMapper.writeValueAsString(printParam);
-        } catch (JsonProcessingException e) {
-            paramJson = "【参数值转换JSON错误】";
-        }
-
-        String spendTime = "";
-        if(time >= 0 ){
-            AnsiElement color = time >= 500 ? AnsiColor.RED:AnsiColor.YELLOW;
-            spendTime = AnsiOutput.toString(color,"(" + time + "ms)");
-        }
-
-        if(label == null){
-            label = "";
-        }else{
-            label =  AnsiOutput.toString(AnsiColor.RED,"【" + label + "】");
-        }
-
-        String generateBy = "";
-        if(signatureInfo != null && signatureInfo.generateBy() != null){
-            generateBy = AnsiOutput.toString("; ",AnsiColor.YELLOW,"QUERY:",AnsiColor.DEFAULT,signatureInfo.generateBy());
-        }
-
-        String dsKey = "";
-        if(DataSourceSwitch.isEnabled()){
-            dsKey = "[" + DataSourceSwitch.get() + "]";
-        }
-
-        String printSql = AnsiOutput.toString(
-                AnsiStyle.BOLD,
-                label,
-                spendTime,
-                AnsiStyle.BOLD,
-                AnsiColor.YELLOW,
-                dsKey,
-                "SQL:",
-                AnsiColor.BLUE,
-                sql+"; ",
-                AnsiColor.YELLOW,
-                "PARAMS:",
-                AnsiColor.DEFAULT,
-                paramJson,
-                generateBy,
-                AnsiStyle.NORMAL);
-        System.out.println(printSql);
+    public void setShowSqlMode(ShowSqlMode showSqlMode) {
+        this.showSqlMode = showSqlMode;
     }
 
-    private Object unwrapParamValue(Object paramItem) {
-        if(paramItem instanceof SqlParameterValue){
-            SqlParameterValue pv = (SqlParameterValue)paramItem;
-            Object value = pv.getValue();
-            if(value != null && (pv.getSqlType() == Types.LONGVARCHAR || pv.getSqlType() == Types.LONGNVARCHAR || pv.getSqlType() == Types.LONGVARBINARY)){
-                return "<LOB>";
-            }else{
-                return value;
-            }
-        }else{
-            return paramItem;
-        }
+    public void setDeleteArchiveHandler(DeleteArchiveHandler deleteArchiveHandler) {
+        this.deleteArchiveHandler = deleteArchiveHandler;
     }
-
-    private enum ShowSqlMode {
-        SQL,TIME_SQL;
-    }
-
-
-    private BeanDefDepository getBeanDefDepository(){
-        if(beanDefDepository == null){
-            beanDefDepository = SpringBeanUtils.getBean(BeanDefDepository.class);
-        }
-        return beanDefDepository;
-    }
-
-//    private class KduckPreparedStatementSetter extends ArgumentPreparedStatementSetter {
-//
-//        public KduckPreparedStatementSetter(Object[] args) {
-//            super(args);
-//        }
-//
-//        @Override
-//        protected void doSetValue(PreparedStatement ps, int parameterPosition, Object argValue) throws SQLException {
-//            if(argValue != null && argValue.getClass() == byte[].class){
-//                defaultLobHandler.getLobCreator().setBlobAsBytes(ps,parameterPosition,(byte[])argValue);
-//            }else{
-//                super.doSetValue(ps, parameterPosition, argValue);
-//            }
-//        }
-//    }
 }

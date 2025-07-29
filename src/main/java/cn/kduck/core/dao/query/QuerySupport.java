@@ -35,4 +35,10 @@ public interface QuerySupport {
      * @see ValueMap#formatValue(java.lang.String, ValueFormatter)
      */
     void addValueFormatter(String attrName, ValueFormatter valueFormatter);
+
+    /**
+     * 当前Query的创建者，一般用于返回创建的Query的class类名，输出到sql输出中。
+     * @return
+     */
+    String generateBy();
 }

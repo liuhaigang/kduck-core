@@ -2,6 +2,7 @@ package cn.kduck.core.service;
 
 import cn.kduck.core.service.ValueMap;
 
+import java.lang.reflect.Array;
 import java.util.Map;
 import java.util.function.Function;
 
@@ -14,8 +15,19 @@ public class ParamMap {
         return new Param();
     }
 
-    public static Param create(String name,Object value){
-        return new Param(name,value);
+    /**
+     *
+     * @param name
+     * @param value
+     * @return
+     * @deprecated 由{@link #createAndSet}代替
+     */
+    public static Param create(String name,Object value,Object... otherValues){
+        return new Param(name,value,otherValues);
+    }
+
+    public static Param createAndSet(String name,Object value,Object... otherValues){
+        return new Param(name,value,otherValues);
     }
 
     /**
@@ -42,12 +54,48 @@ public class ParamMap {
 
         public Param(){}
 
-        public Param(String name,Object value){
-            paramMap.put(name,value);
+        public Param(String name,Object value,Object... otherValues){
+            set(name,value,otherValues);
         }
 
-        public Param set(String name,Object value){
-            paramMap.put(name,value);
+        public Param set(String name,Object value,Object... otherValues){
+            if(otherValues.length > 0){
+                if(value == null){
+                    throw new IllegalArgumentException("设置多个参数值时不允许null值");
+                }
+                Class<?> valueClass = value.getClass();
+                //check class type
+                for (Object otherValue : otherValues) {
+                    if(otherValue == null){
+                        throw new IllegalArgumentException("设置多个参数值时不允许null值");
+                    }
+                    if(otherValue.getClass() != valueClass){
+                        throw new IllegalArgumentException("设置参数值错误，类型不一致：" + otherValue.getClass() + "!=" + valueClass);
+                    }
+                }
+
+                Object[] elements = new Object[otherValues.length + 1];
+                elements[0] = value;
+                System.arraycopy(otherValues,0,elements,1,otherValues.length);
+                paramMap.put(name,elements);
+            }else{
+                paramMap.put(name,value);
+            }
+            return this;
+        }
+
+        public Param setIfNotNull(String name,Object value){
+            if(value != null){
+                set(name,value);
+            }
+            return this;
+        }
+
+        public <T> Param set(String name,T value,Function<T,Boolean> conditionFunction){
+            Boolean result = conditionFunction.apply(value);
+            if(result != null && result.booleanValue()){
+                set(name,value);
+            }
             return this;
         }
 

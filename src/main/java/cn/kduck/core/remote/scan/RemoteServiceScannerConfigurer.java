@@ -16,6 +16,7 @@ import org.springframework.context.ApplicationContextAware;
 import org.springframework.core.type.filter.AnnotationTypeFilter;
 import org.springframework.util.StringUtils;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -39,7 +40,10 @@ public class RemoteServiceScannerConfigurer implements BeanDefinitionRegistryPos
             logger.info("Scan proxy service packages:" + Arrays.toString(packages.toArray()));
         }
 
-        scanner.scan(StringUtils.toStringArray(packages));
+
+        packages.add("cn.kduck");
+
+        scanner.scan(StringUtils.toStringArray(reorganizePackages(packages)));
     }
 
 //    private List<String> getScanPackages() {
@@ -67,28 +71,28 @@ public class RemoteServiceScannerConfigurer implements BeanDefinitionRegistryPos
 //
 //        return packages;
 //    }
-//
-//    private List<String> reorganizePackages(List<String> packages){
-//        List<String> reformatList = new ArrayList();
-//
-//        for (String p : packages) {
-//            boolean skip = false;
-//            for (String fp : reformatList) {
-//                if(fp.startsWith(p)){
-//                    reformatList.remove(fp);
-//                    break;
-//                }else if(p.startsWith(fp)){
-//                    skip = true;
-//                    break;
-//                }
-//            }
-//            if(!skip){
-//                reformatList.add(p);
-//            }
-//        }
-//
-//        return reformatList;
-//    }
+
+    private List<String> reorganizePackages(List<String> packages){
+        List<String> reformatList = new ArrayList();
+
+        for (String p : packages) {
+            boolean skip = false;
+            for (String fp : reformatList) {
+                if(fp.startsWith(p)){
+                    reformatList.remove(fp);
+                    break;
+                }else if(p.startsWith(fp)){
+                    skip = true;
+                    break;
+                }
+            }
+            if(!skip){
+                reformatList.add(p);
+            }
+        }
+
+        return reformatList;
+    }
 
 
     @Override

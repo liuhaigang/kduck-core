@@ -3,7 +3,6 @@ package cn.kduck.core.dao.query;
 import cn.kduck.core.dao.FieldFilter;
 import cn.kduck.core.service.ParamMap.Param;
 import cn.kduck.core.dao.SqlObject;
-import cn.kduck.core.dao.sqlbuilder.SignatureInfo;
 import cn.kduck.core.dao.utils.JdbcUtils;
 import cn.kduck.core.dao.definition.BeanFieldDef;
 import cn.kduck.core.dao.query.formater.ValueFormatter;
@@ -12,17 +11,12 @@ import cn.kduck.core.dao.sqlbuilder.SelectBuilder.AggregateType;
 import cn.kduck.core.dao.sqlbuilder.SqlStringSplicer;
 import org.springframework.util.StringUtils;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * LiuHG
  */
-public class CustomQueryBean implements QuerySupport, SignatureInfo {
+public class CustomQueryBean implements QuerySupport {
 
 //    private static final String PLACEHOLDER_PATTERN = "#\\{([\\w]*)\\}";
 //
@@ -117,20 +111,48 @@ public class CustomQueryBean implements QuerySupport, SignatureInfo {
 
     @Override
     public SqlObject getQuery(FieldFilter filter) {
-        List<AliasField> aliasFields;
+//        List<AliasField> aliasFields;
+//        if(filter == null){
+//            aliasFields = fieldList;
+//        }else{
+//            if(fieldList == null || fieldList.isEmpty()){
+//                throw new RuntimeException("未指定字段定义，无法进行字段过滤");
+//            }
+//            aliasFields = filter.doFilter(fieldList);
+//        }
+//
+//        List<BeanFieldDef> fieldDefList = new ArrayList<>();
+//        aliasFields.forEach(item->{
+//            fieldDefList.add(item.getFieldDef());
+//        });
+
+        List<AliasField> aliasFieldList;
         if(filter == null){
-            aliasFields = fieldList;
+            aliasFieldList = fieldList;
         }else{
             if(fieldList == null || fieldList.isEmpty()){
                 throw new RuntimeException("未指定字段定义，无法进行字段过滤");
             }
-            aliasFields = filter.doFilter(fieldList);
+            aliasFieldList = filter.doFilter(fieldList);
         }
 
         List<BeanFieldDef> fieldDefList = new ArrayList<>();
-        aliasFields.forEach(item->{
-            fieldDefList.add(item.getFieldDef());
-        });
+
+        Set<String> appearedFields = new HashSet<>();//记录出现过的字段名，便于字段去重复
+
+        //循环需要查询返回的字段，剔除重复的字段。
+        AliasField[] aliasFields = aliasFieldList.toArray(new AliasField[0]);
+        for (AliasField aliasField : aliasFields) {
+            String selectFieldName = aliasField.getAlias() == null ? aliasField.getFieldDef().getFieldName() : aliasField.getAlias();
+            if(appearedFields.contains(selectFieldName)){
+                throw new RuntimeException("查询字段同名冲突：" + selectFieldName);
+//                aliasFieldList.remove(aliasField);
+            } else {
+                appearedFields.add(selectFieldName);
+                fieldDefList.add(aliasField.getFieldDef());
+            }
+        }
+        appearedFields.clear();
 
         if(sqlObject != null){
             sqlObject.setFieldDefList(fieldDefList);
@@ -140,9 +162,9 @@ public class CustomQueryBean implements QuerySupport, SignatureInfo {
         String sql = querySql;
         String queryFields;
 //        List<BeanFieldDef> queryFieldDefs = new ArrayList<>(aliasFields.size());
-        if(aliasFields != null && !aliasFields.isEmpty()){
+        if(aliasFieldList != null && !aliasFieldList.isEmpty()){
             SqlStringSplicer filedBuilder = new SqlStringSplicer();
-            for (AliasField aliasField : aliasFields) {
+            for (AliasField aliasField : aliasFieldList) {
                 String fieldAlias = aliasField.getAlias();//字段别名，比如："a.USER_NAME AS userName"的"userName"部分
                 BeanFieldDef fieldDef = aliasField.getFieldDef();
 

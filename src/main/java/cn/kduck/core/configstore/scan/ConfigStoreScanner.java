@@ -46,7 +46,7 @@ public class ConfigStoreScanner extends ClassPathBeanDefinitionScanner {
 
     private void processConfigStoreDefinitions(GenericBeanDefinition definition, Class<?> configClass) {
         definition.getConstructorArgumentValues().addGenericArgumentValue(configClass);
-        definition.getConstructorArgumentValues().addGenericArgumentValue(new RuntimeBeanReference("configStoreReloader"));
+//        definition.getConstructorArgumentValues().addGenericArgumentValue(new RuntimeBeanReference("configStoreReloader"));
         definition.setBeanClass(ConfigStoreProxy.class);
     }
 

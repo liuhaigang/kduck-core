@@ -7,10 +7,10 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 注意，该对象在被序列化和反序列化时会忽略resourceName属性
+ * 注意，该对象在被序列化和反序列化时会忽略resourceName和resourceGroup属性
  * @author LiuHG
  */
-@JsonIgnoreProperties("resourceName")
+@JsonIgnoreProperties({"resourceName","resourceGroup"})
 public class ResourceValueMap extends ValueMap {
 
     /**资源名*/
@@ -21,12 +21,18 @@ public class ResourceValueMap extends ValueMap {
     private static final String OPERATE_LIST = "operateList";
     /**校验值*/
     private static final String MD5 = "md5";
+    /**资源分组，一般用于多个微服务，区分微服务用*/
+    private static final String RESOURCE_GROUP = "resourceGroup";
+
+    public static final String VERSION = "version";
 
     public ResourceValueMap() {
     }
 
-    public ResourceValueMap(Map<String, Object> map) {
-        super(map);
+    public ResourceValueMap(Map map) {
+        if (map != null) {
+            super.putAll(map);
+        }
     }
 
     public void setResourceName(String resourceName) {
@@ -45,6 +51,14 @@ public class ResourceValueMap extends ValueMap {
         return super.getValueAsString(RESOURCE_CODE);
     }
 
+    public void setResourceGroup(String resourceGroup) {
+        super.setValue(RESOURCE_GROUP, resourceGroup);
+    }
+
+    public String getResourceGroup() {
+        return super.getValueAsString(RESOURCE_GROUP);
+    }
+
     public void setOperateList(List<OperateValueMap> operateList) {
         super.setValue(OPERATE_LIST, operateList);
     }
@@ -59,5 +73,13 @@ public class ResourceValueMap extends ValueMap {
 
     public String getMd5() {
         return super.getValueAsString(MD5);
+    }
+
+    public void setVersion(String version) {
+        super.put(VERSION, version);
+    }
+
+    public String getVersion() {
+        return super.getValueAsString(VERSION);
     }
 }

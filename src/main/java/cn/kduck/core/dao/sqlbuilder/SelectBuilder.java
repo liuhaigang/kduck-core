@@ -36,8 +36,8 @@ public class SelectBuilder {
 
     private static final String FIELD_NAME_SPLIT_PATTERN = "[:]";
 
-    private static final String SQL_HEAD = "SELECT {*} ";
-    private static final String SQL_DISTINCT_HEAD = "SELECT DISTINCT {*} ";
+    private static final String SQL_HEAD = "SELECT{hint} {*} ";
+    private static final String SQL_DISTINCT_HEAD = "SELECT{hint} DISTINCT {*} ";
 
     private final String sql;
 
@@ -61,6 +61,8 @@ public class SelectBuilder {
     private Map<String, AggregateType> aggregateMap = new HashMap<>();
 
     private boolean needWhere = true;
+
+    private String hint;
 
     public SelectBuilder(){
         this(Collections.emptyMap());
@@ -150,6 +152,7 @@ public class SelectBuilder {
      * @param fields 表返回的字段定义集合
      * @return 构造器自身
      * @see BeanDefUtils BeanDefUtils
+     * @deprecated 请参考使用 {@link #bindFields(String, String...)}
      */
     public SelectBuilder bindFields(String alias, List<BeanFieldDef> fields){
         List<AliasField> selectField = new ArrayList<>(fields.size());
@@ -160,25 +163,35 @@ public class SelectBuilder {
         return this;
     }
 
-    //暂不开放使用
-//    /**
-//     * 为开发时方便设置查询返回的字段而存在的方法，如果设置了此方法会覆盖{@link #bindFields(String, List)}的配置。
-//     * @param alias 表别名
-//     * @param attrNames 返回的字段属性名，如果需要设置别名。如果需要设置别名，则以属性名+":"+别名的格式设置，例如：name:userName
-//     * @return SelectBuilder自身
-//     */
-//    public SelectBuilder bindFields(String alias, String... attrNames){
-//        fieldAttrNameMap.put(alias,attrNames);
-//        return this;
-//    }
-//
-//    public SelectBuilder bindFields(boolean reverse,String alias, String... attrNames){
-//        if(reverse){
-//            alias = "!" + alias;
-//        }
-//        fieldAttrNameMap.put(alias,attrNames);
-//        return this;
-//    }
+    /**
+     * 多表查询时，指定返回的表字段。因为多表查询返回的字段会有所不同，依靠此方法来分别指定不同表返回的字段。
+     * 使用该方法的前提是没有在构造时提供字段集合。<p/>
+     * 如果设置了此方法会覆盖{@link #bindFields(String, List)}的配置。
+     * @param alias 表别名
+     * @param attrNames 返回的字段属性名，如果需要设置别名。如果需要设置别名，则以属性名+":"+别名的格式设置，例如：name:userName
+     * @return SelectBuilder自身
+     */
+    public SelectBuilder bindFields(String alias, String... attrNames){
+        fieldAttrNameMap.put(alias,attrNames);
+        return this;
+    }
+
+    /**
+     * 多表查询时，指定返回的表字段，根据include参数决定是包含，还是排除字段。因为多表查询返回的字段会有所不同，依靠此方法来分别指定不同表返回的字段。
+     * 使用该方法的前提是没有在构造时提供字段集合。<p/>
+     * 如果设置了此方法会覆盖{@link #bindFields(String, List)}的配置。
+     * @param alias 表别名
+     * @param include true 包含指定字段，false 排除指定字段
+     * @param attrNames 返回的字段属性名，如果需要设置别名。如果需要设置别名，则以属性名+":"+别名的格式设置，例如：name:userName
+     * @return SelectBuilder自身
+     */
+    public SelectBuilder bindFields(String alias, boolean include,String... attrNames){
+        if(!include){
+            alias = "!" + alias;
+        }
+        fieldAttrNameMap.put(alias,attrNames);
+        return this;
+    }
 
     public SelectBuilder bindAliasField(String alias, BeanFieldDef field,String fieldAlias){
         List<AliasField> selectField = fieldMap.get(alias);
@@ -234,7 +247,7 @@ public class SelectBuilder {
         if(aliasFieldList != null){
             for (AliasField field : aliasFieldList){
                 String fName = field.getFieldDef().getFieldName();
-                if(fName.equals(aliasFieldName)){
+                if(fName.equalsIgnoreCase(aliasFieldName)){
                     field.setAlias(fieldAlias);
                     break;
                 }
@@ -354,7 +367,11 @@ public class SelectBuilder {
             return sql;
         }
 
-        SqlStringSplicer sqlBuidler = new SqlStringSplicer(sql);
+        String hint = getHint();
+        hint = hint == null ? "" : " /*+ " + hint + " */";
+        String baseSql = sql.replaceFirst("\\{hint\\}",hint);
+
+        SqlStringSplicer sqlBuidler = new SqlStringSplicer(baseSql);
 
         if(joinTable != null){
             List<JoinOn> joinOnList = joinTable.getJoinOnList();
@@ -422,7 +439,13 @@ public class SelectBuilder {
                 String leftAlias = joinOn.getLeftAlias();
                 processDefaultCondition(definer, entityDef, leftAlias+".");
             }
-            processDefaultCondition(definer, joinTable.getMainEntityDef(), "");
+
+            String alias = joinTable.getAlias();
+            if(StringUtils.hasText(alias)){
+                alias += ".";
+            }
+
+            processDefaultCondition(definer, joinTable.getMainEntityDef(), alias);
         }
     }
 
@@ -472,6 +495,14 @@ public class SelectBuilder {
         return false;
     }
 
+    public String getHint() {
+        return hint;
+    }
+
+    public void setHint(String hint) {
+        this.hint = hint;
+    }
+
     public QuerySupport build(){
         if(joinTable == null && (SQL_HEAD.equals(sql) || SQL_DISTINCT_HEAD.equals(sql))){
             throw new RuntimeException("调用where前需要先使用form方法构造数据表");
@@ -486,14 +517,53 @@ public class SelectBuilder {
         }
 
         CustomQueryBean queryBean = new CustomQueryBean(toSql(), paramMap);
+
         Iterator<String> alias = fieldMap.keySet().iterator();
         while (alias.hasNext()){
             String name = alias.next();
-            List<AliasField> aliasField = fieldMap.get(name);
-            if(aliasField != null && !aliasField.isEmpty()){
-                queryBean.bindFields(name,aliasField);
+            List<AliasField> aliasFieldList = fieldMap.get(name);
+            if(aliasFieldList != null && !aliasFieldList.isEmpty()){
+
+                //如果是join字段，排除被join的属性
+                if(joinTable != null){
+                    List<JoinOn> joinOnList = joinTable.getJoinOnList();
+                    for (JoinOn joinOn : joinOnList) {
+                        String rightAlias = joinOn.getRightAlias();
+                        String[] joinAttrName = joinOn.getJoinAttrName();
+                        //判断是否为join表的关联字段，如果是且主外键关联的属性名一致，则从查询返回字段列表中删除外键字段，避免重名冲突
+                        if(name.equals(rightAlias) && joinAttrName[0].equals(joinAttrName[1])){
+                            //如果为关联的字段设置了别名，则不删除外键字段
+                            BeanFieldDef fieldDef = joinOn.getRightEntityDef().getFieldDef(joinAttrName[0]);
+                            if(aliasFieldMap.containsKey(rightAlias + "." + fieldDef.getFieldName())){
+                                continue;
+                            }
+
+                            boolean leftHasField = false;
+                            List<AliasField> leftAliasFields = fieldMap.get(joinOn.getLeftAlias());
+                            if(leftAliasFields != null){
+                                for (AliasField field : leftAliasFields) {
+                                    if(field.getFieldDef().getAttrName().equals(joinAttrName[0])){
+                                        leftHasField = true;
+                                        break;
+                                    }
+                                }
+                            }
+
+                            AliasField[] rightAliasFields = aliasFieldList.toArray(new AliasField[0]);
+                            for (AliasField field : rightAliasFields) {
+                                if(leftHasField && field.getFieldDef().getAttrName().equals(joinAttrName[0])){
+                                    aliasFieldList.remove(field);
+                                }
+                            }
+                        }
+
+                    }
+                }
+
+                queryBean.bindFields(name,aliasFieldList);
             }
         }
+
 //        if(!fieldMap.isEmpty()){
 //            queryBean = new CustomQueryBean(toSql(), paramMap);
 //            Iterator<String> alias = fieldMap.keySet().iterator();

@@ -3,33 +3,28 @@ package cn.kduck.core.cache;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import cn.kduck.core.utils.ConversionUtils;
 import org.springframework.cache.Cache;
 import org.springframework.lang.Nullable;
+import org.springframework.util.Assert;
 
 import java.io.IOException;
 import java.util.Date;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author LiuHG
  */
 public class CacheWrapper implements Cache {
 
-    public static final int CLEAN_THRESHOLD = 5;
-
-    private static final String EXPIRED_KEY_SUFFIX = "::EXPIRED";
-
     private final Cache cache;
     private final ObjectMapper objectMapper;
+    private final CacheExpiredHandler cacheExpiredHandler;
 
-    public CacheWrapper(Cache cache, ObjectMapper objectMapper){
+    public CacheWrapper(Cache cache, ObjectMapper objectMapper,CacheExpiredHandler cacheExpiredHandler){
         this.cache = cache;
         this.objectMapper = objectMapper;
+        this.cacheExpiredHandler = cacheExpiredHandler;
     }
 
     @Override
@@ -46,11 +41,6 @@ public class CacheWrapper implements Cache {
     @Nullable
     public ValueWrapper get(Object key) {
         return cache.get(key);
-    }
-
-
-    private String getExpiredKey(){
-        return getName() + EXPIRED_KEY_SUFFIX;
     }
 
     @Override
@@ -76,17 +66,12 @@ public class CacheWrapper implements Cache {
 
     private void clearByKey(Object key) {
         cache.evict(key);
-        String json = cache.get(getExpiredKey(), String.class);
-        Map expiredMap = json2Bean(json, Map.class);
-        expiredMap.remove(key);
-        cache.put(getExpiredKey(),bean2Json(expiredMap));
     }
 
 
     @Override
     @Nullable
     public <T> T get(Object key, Callable<T> valueLoader) {
-//        return cache.get(key, valueLoader);
         throw new UnsupportedOperationException("不支持此方法");
     }
 
@@ -105,52 +90,25 @@ public class CacheWrapper implements Cache {
     }
 
     public void put(Object key, Object value,Date expired) {
+        Assert.notNull(key,"缓存key不能为null");
+        Assert.notNull(key,"缓存value不能为null");
         //TODO 处理日期直接过期的情况
         String jsonValue = null;
         if(value != null){
             jsonValue = bean2Json(value);
         }
-        cache.put(key, jsonValue);
+        /*
+            在cacheExpiredHandler中设置value，这样避免分步（先设置永久key，在为该key配置过期时间）设置导致有一定几率无法设置上过期时间。
+        */
         if(expired != null){
-            String expiredJson = cache.get(getExpiredKey(), String.class);
-            ConcurrentHashMap<Object,Date> expiredMap;
-            if(expiredJson == null){
-                expiredMap = new ConcurrentHashMap<>();
-            }else{
-                expiredMap = json2Bean(expiredJson, ConcurrentHashMap.class);
-                if(expiredMap.size() >= CLEAN_THRESHOLD){
-                    clearExpired(expiredMap);
-                }
-            }
-            expiredMap.put(key,expired);
-            cache.put(getExpiredKey(),bean2Json(expiredMap));
+            cacheExpiredHandler.doExpired(cache,key,jsonValue,expired);
+        }else {
+            cache.put(key, jsonValue);
         }
     }
 
     public void clearExpired() {
-        String expiredJson = cache.get(getExpiredKey(), String.class);
-        ConcurrentHashMap<Object,Date> expiredMap;
-        if(expiredJson != null){
-            expiredMap = json2Bean(expiredJson, ConcurrentHashMap.class);
-            if(!expiredMap.isEmpty()){
-                clearExpired(expiredMap);
-                cache.put(getExpiredKey(),bean2Json(expiredMap));
-            }
-        }
-    }
-
-    private void clearExpired(ConcurrentHashMap<Object, Date> expiredMap) {
-        Iterator<Object> nameIterator = expiredMap.keySet().iterator();
-        Date nowDate = new Date();
-//        int size = expiredMap.size();
-        while (nameIterator.hasNext()){
-            Object keyName = nameIterator.next();
-            Date expiredDate = ConversionUtils.convert(expiredMap.get(keyName),Date.class);
-            if(expiredDate.before(nowDate)){
-                expiredMap.remove(keyName);
-                evict(keyName);
-            }
-        }
+        cacheExpiredHandler.clearExpired(cache);
     }
 
     private String bean2Json(Object value){
@@ -187,13 +145,7 @@ public class CacheWrapper implements Cache {
     }
 
     private boolean isExpired(Object key) {
-        String expiredJson = cache.get(getExpiredKey(), String.class);
-        Map<Object,Date> expiredMap = json2Bean(expiredJson,Map.class);
-        if(expiredMap == null || !expiredMap.containsKey(key)) {
-            return false;
-        }
-        Date expiredDate = ConversionUtils.convert(expiredMap.get(key),Date.class);
-        return expiredDate.before(new Date());
+        return cacheExpiredHandler.isExpired(cache,key);
     }
 
     @Override

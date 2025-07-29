@@ -1,0 +1,193 @@
+{
+  "groups": [
+    {
+      "name": "kduck",
+      "type": "cn.kduck.core.KduckProperties",
+      "sourceType": "cn.kduck.core.KduckProperties"
+    },
+    {
+      "name": "kduck.definition",
+      "type": "cn.kduck.core.KduckProperties$EntityDefinitionProperties",
+      "sourceType": "cn.kduck.core.KduckProperties",
+      "sourceMethod": "getDefinition()"
+    },
+    {
+      "name": "kduck.definition.tables",
+      "type": "cn.kduck.core.KduckProperties$ScanTablesProperties",
+      "sourceType": "cn.kduck.core.KduckProperties$EntityDefinitionProperties",
+      "sourceMethod": "getTables()"
+    },
+    {
+      "name": "kduck.id.snow-flake",
+      "type": "cn.kduck.core.dao.id.impl.SnowFlakeGenerator$SnowFlakeProperties",
+      "sourceType": "cn.kduck.core.dao.id.impl.SnowFlakeGenerator$SnowFlakeProperties"
+    },
+    {
+      "name": "kduck.resource",
+      "type": "cn.kduck.core.KduckProperties$ResourceProperties",
+      "sourceType": "cn.kduck.core.KduckProperties",
+      "sourceMethod": "getResource()"
+    },
+    {
+      "name": "kduck.websocket",
+      "type": "cn.kduck.core.KduckProperties$WebsocketProperties",
+      "sourceType": "cn.kduck.core.KduckProperties",
+      "sourceMethod": "getWebsocket()"
+    },
+    {
+      "name": "kduck.show-sql",
+      "type": "cn.kduck.core.KduckProperties$ShowSqlProperties",
+      "sourceType": "cn.kduck.core.KduckProperties",
+      "sourceMethod": "getShowSql()"
+    },
+    {
+      "name": "management.endpoint.proxy",
+      "type": "cn.kduck.core.remote.endpoint.ProxyEndpoint",
+      "sourceType": "cn.kduck.core.remote.endpoint.ProxyEndpoint"
+    }
+  ],
+  "properties": [
+    {
+      "name": "kduck.data-source",
+      "type": "java.util.Map",
+      "description": "多数据源配置。key为数据源唯一标识，value为数据连接配置（具体参考K-Duck开发手册）。",
+      "sourceType": "cn.kduck.core.KduckProperties"
+    },
+    {
+      "name": "kduck.definition.tables.exclude",
+      "type": "java.lang.String[]",
+      "description": "启用自动扫描表结构时，排除哪些数据表，支持前后模糊匹配，比如：*_demo或demo_*,多个配置以逗号分隔。",
+      "sourceType": "cn.kduck.core.KduckProperties$ScanTablesProperties"
+    },
+    {
+      "name": "kduck.definition.tables.include",
+      "type": "java.lang.String[]",
+      "description": "启用自动扫描表结构时，只扫描哪些数据表，支持前后模糊匹配，比如：*_demo或demo_*,多个配置以逗号分隔。",
+      "sourceType": "cn.kduck.core.KduckProperties$ScanTablesProperties"
+    },
+    {
+      "name": "kduck.id.snow-flake.data-center-id",
+      "type": "java.lang.Integer",
+      "description": "启用雪花算法生成主键时，数据中心属性的ID值。",
+      "sourceType": "cn.kduck.core.dao.id.impl.SnowFlakeGenerator$SnowFlakeProperties",
+      "defaultValue": 0
+    },
+    {
+      "name": "kduck.id.snow-flake.sequence",
+      "type": "java.lang.Integer",
+      "description": "启用雪花算法生成主键时，启始序列号。默认为1。",
+      "sourceType": "cn.kduck.core.dao.id.impl.SnowFlakeGenerator$SnowFlakeProperties",
+      "defaultValue": 1
+    },
+    {
+      "name": "kduck.id.snow-flake.worker-id",
+      "type": "java.lang.Integer",
+      "description": "启用雪花算法生成主键时，机器节点属性的ID值。",
+      "sourceType": "cn.kduck.core.dao.id.impl.SnowFlakeGenerator$SnowFlakeProperties",
+      "defaultValue": 0
+    },
+    {
+      "name": "kduck.resource.base-package",
+      "type": "java.lang.String[]",
+      "description": "启用资源扫描时，指定扫描的包路径前缀，多个以逗号分隔。",
+      "sourceType": "cn.kduck.core.KduckProperties$ResourceProperties"
+    },
+    {
+      "name": "kduck.resource.skip-in-jar",
+      "type": "java.lang.Boolean",
+      "description": "是否跳过扫描在jar中的模块资源。",
+      "sourceType": "cn.kduck.core.KduckProperties$ResourceProperties"
+    },
+    {
+      "name": "kduck.resource.resourceGroup",
+      "type": "java.lang.String",
+      "description": "资源全局分组，为当前所有接口设置统一的分组名。",
+      "sourceType": "cn.kduck.core.KduckProperties$ResourceProperties"
+    },
+    {
+      "name": "kduck.resource.enabled",
+      "type": "java.lang.Boolean",
+      "description": "是否启用资源扫描。",
+      "sourceType": "cn.kduck.core.KduckProperties$ResourceProperties",
+      "defaultValue": false
+    },
+    {
+      "name": "kduck.websocket.enabled",
+      "type": "java.lang.Boolean",
+      "description": "是否启用WebSocket功能。",
+      "sourceType": "cn.kduck.core.KduckProperties$WebsocketProperties",
+      "defaultValue": false
+    },
+    {
+      "name": "kduck.show-sql.enabled",
+      "type": "java.lang.Boolean",
+      "description": "是否启用显示SQL。注：显示SQL不受日志级别控制。",
+      "sourceType": "cn.kduck.core.KduckProperties$ShowSqlProperties",
+      "defaultValue": false
+    },
+    {
+      "name": "kduck.swagger.enabled",
+      "type": "java.lang.Boolean",
+      "description": "是否启用swagger。",
+      "sourceType": "cn.kduck.core.KduckProperties$ShowSqlProperties",
+      "defaultValue": true
+    },
+    {
+      "name": "kduck.swagger.allow-name-repeat",
+      "type": "java.lang.Boolean",
+      "description": "是否允许根级中介类同名。有些Controller相互继承的场景，同名的方法属性定义也相同时，可以开启此开关。",
+      "defaultValue": false
+    },
+    {
+      "name": "kduck.cache.cache-name-prefix",
+      "type": "java.lang.String",
+      "description": "缓存组名前缀，区分相同组名在不同环境下的使用。"
+    },
+    {
+      "name": "kduck.show-sql.mode",
+      "type": "cn.kduck.core.KduckProperties$ShowSqlMode",
+      "description": "显示SQL输出的模式，默认为：SQL。",
+      "sourceType": "cn.kduck.core.KduckProperties$ShowSqlProperties"
+    },
+    {
+      "name": "kduck.show-sql.slow-threshold",
+      "type": "java.lang.Long",
+      "description": "判定是否为慢SQL的阈值，单位：毫秒。默认为500。",
+      "sourceType": "cn.kduck.core.KduckProperties$ShowSqlProperties"
+    },
+    {
+      "name": "management.endpoint.proxy.cache.time-to-live",
+      "type": "java.time.Duration",
+      "description": "Maximum time that a response can be cached.",
+      "sourceType": "cn.kduck.core.remote.endpoint.ProxyEndpoint",
+      "defaultValue": "0ms"
+    },
+    {
+      "name": "management.endpoint.proxy.enabled",
+      "type": "java.lang.Boolean",
+      "description": "是否启用远程调用的状态信息检测端点。",
+      "sourceType": "cn.kduck.core.remote.endpoint.ProxyEndpoint",
+      "defaultValue": true
+    }
+  ],
+  "hints": [
+    {
+      "name": "kduck.show-sql.mode",
+      "values": [
+        {
+          "value": "SQL",
+          "description": "仅显示执行的SQL及参数信息，此种模式会在SQL执行前输出。默认值。"
+        },{
+          "value": "TIME_SQL",
+          "description": "显示执行的SQL及参数信息以及执行的时间，此种模式会在SQL执行后输出。"
+        },{
+          "value": "JUST_SLOW_SQL",
+          "description": "仅显示慢SQL及参数信息，此种模式会在SQL执行后输出。"
+        },{
+          "value": "SQL_ON_ERROR",
+          "description": "仅当执行数据库操作异常的时候输出SQL。"
+        }
+      ]
+    }
+  ]
+}

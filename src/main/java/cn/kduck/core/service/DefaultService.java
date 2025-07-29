@@ -1,13 +1,12 @@
 package cn.kduck.core.service;
 
-import cn.kduck.core.dao.DeleteArchiveHandler;
-import cn.kduck.core.dao.FieldFilter;
-import cn.kduck.core.dao.JdbcEntityDao;
-import cn.kduck.core.dao.SqlObject;
+import cn.kduck.core.dao.*;
 import cn.kduck.core.dao.definition.BeanDefDepository;
 import cn.kduck.core.dao.definition.BeanEntityDef;
 import cn.kduck.core.dao.definition.BeanFieldDef;
+import cn.kduck.core.dao.exception.TooManyResultsException;
 import cn.kduck.core.dao.id.IdGenerator;
+import cn.kduck.core.dao.id.impl.KduckIdGenerator;
 import cn.kduck.core.dao.id.impl.SnowFlakeGenerator;
 import cn.kduck.core.dao.id.impl.UuidGenerator;
 import cn.kduck.core.dao.query.CustomQueryBean;
@@ -20,25 +19,25 @@ import cn.kduck.core.dao.sqlbuilder.InsertBuilder;
 import cn.kduck.core.dao.sqlbuilder.SelectBuilder;
 import cn.kduck.core.dao.sqlbuilder.UpdateBuilder;
 import cn.kduck.core.dao.sqlbuilder.template.update.UpdateFragmentTemplate;
+import cn.kduck.core.exception.NonUniqueAttributeException;
+import cn.kduck.core.service.autofill.AutofillValue;
+import cn.kduck.core.service.autofill.AutofillValue.FillType;
 import cn.kduck.core.service.autofill.impl.StandardFieldAutofill;
 import cn.kduck.core.service.exception.QueryNotFoundException;
+import cn.kduck.core.utils.ConversionUtils;
 import cn.kduck.core.web.interceptor.OperateIdentificationInterceptor.OidHolder;
 import cn.kduck.core.web.interceptor.OperateIdentificationInterceptor.OperateIdentification;
 import cn.kduck.core.web.interceptor.operateinfo.OperateObject;
 import cn.kduck.core.web.interceptor.operateinfo.OperateObject.OperateType;
-import cn.kduck.core.service.autofill.AutofillValue;
-import cn.kduck.core.service.autofill.AutofillValue.FillType;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Function;
 
 /**
@@ -49,7 +48,7 @@ import java.util.function.Function;
  * @author LiuHG
  */
 @Service
-public class DefaultService {
+public class DefaultService implements InitializingBean {
 
     private final Log logger = LogFactory.getLog(getClass());
 
@@ -210,7 +209,7 @@ public class DefaultService {
         return idValues;
     }
 
-    private void addOperateObject(OperateType type,ValueBean valueBean){
+    protected void addOperateObject(OperateType type,ValueBean valueBean){
         OperateIdentification operateIdentification = OidHolder.getOperateIdentification();
 
         if(operateIdentification == null) {
@@ -220,7 +219,7 @@ public class DefaultService {
 
         BeanEntityDef entityDef = valueBean.getEntityDef();
 
-        if(OperateType.INSERT == type && "K_DELETE_ARCHIVE".equals(entityDef.getTableName().toUpperCase())) {
+        if(OperateType.INSERT == type && "K_DELETE_ARCHIVE".equalsIgnoreCase(entityDef.getTableName())) {
             return;
         }
 
@@ -261,8 +260,12 @@ public class DefaultService {
      * @return 数据的主键值
      */
     public Serializable[] batchAdd(String entityDefName, Map[] valueMaps, Map<String,Object> extParams){
+        return batchAdd(entityDefName,valueMaps,extParams,true);
+    }
+
+    public Serializable[] batchAdd(String entityDefName, Map[] valueMaps, Map<String,Object> extParams,boolean resetPk){
         ValueBean[] valueBeans = convertValueBeans(entityDefName, valueMaps, extParams);
-        return batchAdd(valueBeans,true);
+        return batchAdd(valueBeans,resetPk);
     }
 
     private ValueBean[] convertValueBeans(String entityDefName, Map[] valueMaps, Map<String, Object> extParams) {
@@ -347,6 +350,10 @@ public class DefaultService {
         delete(ids, beanEntityDef, pkFieldDef);
     }
 
+    public void delete(String entityDefName,Serializable id){
+        delete(entityDefName,new Serializable[]{id});
+    }
+
     /**
      * 根据其他键值，删除指定的数据。<p/>
      * 框架在删除时采用物理删除，但默认会将被删除的数据归档到K_DELETE_ARCHIVE表（需提前创建），
@@ -363,12 +370,20 @@ public class DefaultService {
         delete(attrValues, beanEntityDef, fkFieldDef);
     }
 
+    public void delete(String entityDefName, String attrName, Serializable attrValue){
+        delete(entityDefName, attrName, new Serializable[]{attrValue});
+    }
+
     private void delete(Serializable[] ids, BeanEntityDef beanEntityDef, BeanFieldDef pkFieldDef) {
-        Map<String, Object> paramMap = ParamMap.create("ids", ids).toMap();
+        Map<String, Object> paramMap = ParamMap.createAndSet("ids", ids).toMap();
 
         DeleteBuilder deleteBuilder = new DeleteBuilder(beanEntityDef, paramMap);
         deleteBuilder.where(pkFieldDef.getFieldName(), ConditionType.IN, "ids");
 //        jdbcEntityDao.delete(deleteBuilder);
+
+        ValueBean valueBean = new ValueBean(beanEntityDef, paramMap, false);
+        addOperateObject(OperateType.DELETE,valueBean);
+
         jdbcEntityDao.execute(deleteBuilder.build());
     }
 
@@ -508,7 +523,7 @@ public class DefaultService {
 
         Assert.notNull(fieldDef,entityDefName + "实体中不包含" + attrName + "属性。参数应当提供属性名，是否提供了数据库字段名？");
 
-        Map<String, Object> paramMap = ParamMap.create(fieldDef.getAttrName(), attrValue).toMap();
+        Map<String, Object> paramMap = ParamMap.createAndSet(fieldDef.getAttrName(), attrValue).toMap();
         SelectBuilder sqlBuilder = new SelectBuilder(entityDef,paramMap);
         sqlBuilder.where(fieldDef.getFieldName(),ConditionType.EQUALS,fieldDef.getAttrName());
 
@@ -582,6 +597,76 @@ public class DefaultService {
     }
 
     /**
+     * 查询单条属性，要求返回的数据中只有一个属性字段返回，将数据值转换为typeClass类型返回。
+     * @param entityDefName 实体定义编码名
+     * @param id 数据的主键值
+     * @param typeClass 最终返回数据的数据类型
+     * @return 指定类型的数据值
+     */
+    public <T>  T getForClass(String entityDefName, String id, Class<T> typeClass){
+        ValueMap valueMap = get(entityDefName, id);
+        return getForClass(valueMap, null, typeClass);
+    }
+
+
+    /**
+     * 查询单条属性，根据extractAttrName属性提取属性值，转换为typeClass类型的数据值返回。
+     * @param entityDefName 实体定义编码名
+     * @param id 数据的主键值
+     * @param extractAttrName 需要提取的属性名
+     * @param typeClass 最终返回数据的数据类型
+     * @return 指定类型的数据值
+     */
+    public <T>  T getForClass(String entityDefName, String id, String extractAttrName, Class<T> typeClass){
+        ValueMap valueMap = get(entityDefName, id);
+        return getForClass(valueMap, extractAttrName, typeClass);
+    }
+
+    /**
+     * 查询单条属性，根据extractAttrName属性提取属性值，转换为typeClass类型的数据值返回。
+     * @param entityDefName 实体定义编码名
+     * @param attrName 用于条件的属性名
+     * @param attrValue 用于条件的属性值
+     * @param extractAttrName 需要提取的属性名
+     * @param typeClass 最终返回数据的数据类型
+     * @return 指定类型的数据值
+     */
+    public <T>  T getForClass(String entityDefName, String attrName, String attrValue, String extractAttrName, Class<T> typeClass){
+        ValueMap valueMap = get(entityDefName, attrName,attrValue,null);
+        return getForClass(valueMap, extractAttrName, typeClass);
+    }
+
+    public <T>  T getForClass(QuerySupport queryBean,Class<T> typeClass){
+        return getForClass(queryBean,null,typeClass);
+    }
+
+    public <T>  T getForClass(QuerySupport queryBean, String extractAttrName,Class<T> typeClass){
+        ValueMap valueMap = get(queryBean);
+        return getForClass(valueMap,extractAttrName,typeClass);
+    }
+    public <T>  T getForClass(ValueMap valueMap, String extractAttrName,Class<T> typeClass){
+        if(valueMap == null || valueMap.isEmpty()){
+            return null;
+        }
+
+        Object o;
+        if(extractAttrName != null){
+            o = valueMap.get(extractAttrName);
+            if(o == null){
+                return null;
+            }
+        }else{
+            if(valueMap.size() != 1){
+                throw new NonUniqueAttributeException("要求返回的单条数据中只能包含一个属性：" + valueMap.size());
+            }
+            String key = valueMap.keySet().iterator().next();
+            o = valueMap.get(key);
+        }
+
+        return typeClass != null ? ConversionUtils.convert(o,typeClass) : (T)o;
+    }
+
+    /**
      * 根据提供的属性名及值查询唯一的数据信息，根据给定的构造器返回对象
      * @param queryBean 查询器对象
      * @param filter 字段过滤器，用于指定查询的字段，可以为null，表示返回所有字段
@@ -606,15 +691,29 @@ public class DefaultService {
      * @see CustomQueryBean CustomQueryBean
      */
     public ValueMap get(QuerySupport queryBean, FieldFilter filter){
-        ValueMapList list = list(queryBean, new Page(false),filter);//此处设置new Page()按照分页查询，是避免查询出大批量数据。
+//        ValueMapList list = list(queryBean, new Page(false),filter);//此处设置new Page()按照分页查询，是避免查询出大批量数据。
+        ValueMapList list = new ValueMapList();
+        jdbcEntityDao.executeQuery(queryBean, filter, new BatchDataCallbackHandler() {
+            @Override
+            public int batchSize() {
+                return 2;
+            }
+
+            @Override
+            public void processBatchData(Map<String, Object>[] recordMaps) {
+                for (Map<String, Object> recordMap : recordMaps) {
+                    list.add(new ValueMap(recordMap));
+                }
+            }
+        });
         if(list.size() > 1){
-            throw new RuntimeException("要求最多返回1条记录，当前返回了多条数据："+list.size());
+            throw new TooManyResultsException("要求最多返回1条记录，当前返回了多于1条的数据");
         }
         if(list.isEmpty()){
             return null;
         }
 
-        return new ValueMap(list.get(0));
+        return list.get(0);
     }
 
     /**
@@ -663,7 +762,7 @@ public class DefaultService {
      * @return 结果集对象，如果没有满足条件的数据返回空集合，不会返回null
      */
     public ValueMapList list(QuerySupport queryBean){
-        return list(queryBean, null, null);
+        return list(queryBean, null, (FieldFilter)null);
     }
 
     /**
@@ -688,6 +787,55 @@ public class DefaultService {
         return new ValueMapList(recordList);
     }
 
+    public ValueMapList list(QuerySupport queryBean,int maxRow){
+        return list(queryBean, maxRow, null);
+    }
+
+    public ValueMapList list(QuerySupport queryBean,int maxRow, FieldFilter filter){
+        return list(queryBean,0,maxRow,filter);
+    }
+
+    public ValueMapList list(QuerySupport queryBean,int firstResult,int maxRow, FieldFilter filter){
+        List<Map<String, Object>> recordList = jdbcEntityDao.executeQuery(queryBean, firstResult, maxRow, filter);
+        return new ValueMapList(recordList);
+    }
+
+    public <R extends ValueMap> List<R> listForBean(QuerySupport queryBean,int maxRow, Function<Map,R> bean){
+        return listForBean(queryBean, maxRow, null,bean);
+    }
+
+    public <R extends ValueMap> List<R> listForBean(QuerySupport queryBean,int maxRow, FieldFilter filter, Function<Map,R> bean){
+        return listForBean(queryBean,0,maxRow,filter,bean);
+    }
+
+    public <R extends ValueMap> List<R> listForBean(QuerySupport queryBean,int firstResult,int maxRow, Function<Map,R> bean){
+        return listForBean(queryBean,firstResult,maxRow,null,bean);
+    }
+
+    public <R extends ValueMap> List<R> listForBean(QuerySupport queryBean,int firstResult,int maxRow, FieldFilter filter, Function<Map,R> bean){
+        List<Map<String, Object>> recordList = jdbcEntityDao.executeQuery(queryBean, firstResult, maxRow, filter);
+        if(recordList.isEmpty()){
+            return Collections.emptyList();
+        }
+
+        List<R> resultList = new ArrayList<>(recordList.size());
+        for (Map<String, Object> value : recordList) {
+            R beanObject = bean.apply(value);
+            resultList.add(beanObject);
+        }
+        return resultList;
+    }
+
+    public void list(QuerySupport queryBean,FieldFilter filter, BatchDataCallbackHandler batchDataCallbackHandler){
+        Assert.notNull(queryBean,"QueryBean不能为null");
+        jdbcEntityDao.executeQuery(queryBean, filter,batchDataCallbackHandler);
+    }
+
+    public void list(QuerySupport queryBean,BatchDataCallbackHandler batchDataCallbackHandler){
+        Assert.notNull(queryBean,"QueryBean不能为null");
+        jdbcEntityDao.executeQuery(queryBean, null,batchDataCallbackHandler);
+    }
+
     private List<Map<String, Object>> executeQuery(QuerySupport queryBean,Page page, FieldFilter filter){
         Assert.notNull(queryBean,"QueryBean不能为null");
         int firstResult = -1;
@@ -696,6 +844,12 @@ public class DefaultService {
             if(page.isRecount()){
                 int currentPage = page.getCurrentPage();
                 long count = jdbcEntityDao.executeCount(queryBean,filter);//这里需要调用带filter的方法
+
+                //如果没有查询出任何数据则直接返回空集合，不需要再执行下面的分页查询
+                if(count == 0){
+                    return Collections.emptyList();
+                }
+
                 page.calculate(count);
                 if(page.getMaxPage() < currentPage){
                     return Collections.emptyList();
@@ -703,6 +857,7 @@ public class DefaultService {
             }
             firstResult = page.getFirstResult();
             maxRow = page.getPageSize();
+
         }
 
         return jdbcEntityDao.executeQuery(queryBean, firstResult, maxRow, filter);
@@ -752,15 +907,19 @@ public class DefaultService {
         return resultList;
     }
 
-    /**
-     * 预留的SQL接口，用于数据写操作，但此方法未经允许不得使用，用于本类其他方法无法实现的场景、应急提供。
-     * @param sql SQL语句
-     * @param paramMap 参数值
-     * @return 影响的数据量
-     */
-    public int executeUpdate(String sql , Map<String,Object> paramMap){
-        return jdbcEntityDao.execute(sql,paramMap);
+    public <R extends ValueMap> List<R> listForBean(Class<? extends QueryCreator> queryClass, Map<String, Object> paramMap, Function<Map, R> bean) {
+        QuerySupport queryBean = getQuery(queryClass, paramMap);
+        return listForBean(queryBean, bean);
+    }
 
+    public <R extends ValueMap> List<R> listForBean(Class<? extends QueryCreator> queryClass, Map<String, Object> paramMap, Page page, Function<Map, R> bean) {
+        QuerySupport queryBean = getQuery(queryClass, paramMap);
+        return listForBean(queryBean, page, bean);
+    }
+
+    public <R extends ValueMap> List<R> listForBean(Class<? extends QueryCreator> queryClass, Map<String, Object> paramMap, Page page, FieldFilter filter, Function<Map, R> bean) {
+        QuerySupport queryBean = getQuery(queryClass, paramMap);
+        return listForBean(queryBean, page, filter, bean);
     }
 
     /**
@@ -769,8 +928,7 @@ public class DefaultService {
      * @return 实体定义对象，如果定义对象不存在则抛出异常
      */
     public final BeanEntityDef getEntityDef(String entityDefName){
-        BeanEntityDef entityDef = beanDefDepository.getEntityDef(entityDefName.toUpperCase());
-        return entityDef;
+        return beanDefDepository.getEntityDef(entityDefName.toUpperCase());
     }
 
     public final BeanFieldDef getFieldDef(BeanEntityDef beanEntityDef,String attrName){
@@ -834,37 +992,29 @@ public class DefaultService {
         return queryFactory.getQuery(queryCreatorClass,paramMap);
     }
 
-    /**
-     * 获取在添加和修改方法时，对创造数据值对象(ValueBean)同时赋值时，是否严格检测属性的一一对应关系，即值对象{@link ValueMap ValueMap}中的属性必须是实体定义中的属性。
-     * @return true 严格检测，false 不检测（默认）
-     */
-    public boolean isStrict() {
-        return strict;
-    }
-
-    /**
-     * 设置在添加和修改方法时，对创造数据值对象(ValueBean)同时赋值时，是否严格检测属性的一一对应关系，即值对象{@link ValueMap ValueMap}中的属性必须是实体定义中的属性。
-     * @param strict true 严格检测，false 不检测
-     */
-    public void setStrict(boolean strict) {
-        this.strict = strict;
-    }
+//    /**
+//     * 获取在添加和修改方法时，对创造数据值对象(ValueBean)同时赋值时，是否严格检测属性的一一对应关系，即值对象{@link ValueMap ValueMap}中的属性必须是实体定义中的属性。
+//     * @return true 严格检测，false 不检测（默认）
+//     */
+//    public boolean isStrict() {
+//        return strict;
+//    }
+//
+//    /**
+//     * 设置在添加和修改方法时，对创造数据值对象(ValueBean)同时赋值时，是否严格检测属性的一一对应关系，即值对象{@link ValueMap ValueMap}中的属性必须是实体定义中的属性。
+//     * @param strict true 严格检测，false 不检测
+//     */
+//    public void setStrict(boolean strict) {
+//        this.strict = strict;
+//    }
 
     /**
      *
-     * @param sqlObject
+     * @param sqlObject sql执行对象，该方法不会记录审计对象，需要手动处理
      * @return 影响的记录数，返回数组是由于操作可能是批量操作
      */
     public int[] executeUpdate(SqlObject sqlObject){
         return jdbcEntityDao.execute(sqlObject);
-    }
-
-    /**
-     * 获取日志对象，便于子类日志信息记录
-     * @return 日志对象
-     */
-    public Log getLogger(){
-        return logger;
     }
 
     private void processFillValue(FillType type,ValueBean valueBean){
@@ -874,5 +1024,35 @@ public class DefaultService {
         autofillValue.autofill(type,valueBean);
     }
 
+    public void setBeanDefDepository(BeanDefDepository beanDefDepository) {
+        this.beanDefDepository = beanDefDepository;
+    }
 
+    public void setJdbcEntityDao(JdbcEntityDao jdbcEntityDao) {
+        this.jdbcEntityDao = jdbcEntityDao;
+    }
+
+    public void setQueryFactory(QueryFactory queryFactory) {
+        this.queryFactory = queryFactory;
+    }
+
+    public void setIdGenerator(IdGenerator idGenerator) {
+        this.idGenerator = idGenerator;
+    }
+
+    public void setAutofillValue(AutofillValue autofillValue) {
+        this.autofillValue = autofillValue;
+    }
+
+    @Override
+    public void afterPropertiesSet() throws Exception {
+        Assert.notNull(beanDefDepository,"beanDefDepository不能为null");
+        Assert.notNull(jdbcEntityDao,"jdbcEntityDao不能为null");
+        if(idGenerator == null){
+            idGenerator = new KduckIdGenerator();
+        }
+        if(queryFactory == null){
+            logger.warn("queryFactory为null，不能执行QueryCreator构造的查询");
+        }
+    }
 }

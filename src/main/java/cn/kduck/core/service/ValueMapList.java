@@ -3,7 +3,9 @@ package cn.kduck.core.service;
 import cn.kduck.core.utils.ConversionUtils;
 import org.springframework.beans.BeanUtils;
 
+import java.lang.reflect.Array;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -57,6 +59,9 @@ public class ValueMapList extends ArrayList<ValueMap> {
 
     public <T> T[] getValueArray(String name,Class<T> type,boolean ignoreNull){
         List<T> valueList = getValueList(name, type, ignoreNull);
+        if(valueList.isEmpty()){
+            return (T[]) Array.newInstance(type,0);
+        }
         return (T[]) valueList.toArray();
     }
 
@@ -100,6 +105,9 @@ public class ValueMapList extends ArrayList<ValueMap> {
     }
 
     public <T> List<T> getValueList(String name,Class<T> type,boolean ignoreNull){
+        if(super.isEmpty()){
+            return Collections.emptyList();
+        }
         List<T> valueList = new ArrayList(super.size());
         for (Map<String,Object> valueMap : this) {
             if(valueMap.containsKey(name)){

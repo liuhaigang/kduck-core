@@ -1,12 +1,12 @@
 package cn.kduck.core.web.resource;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import cn.kduck.core.KduckProperties;
+import cn.kduck.core.KduckProperties.ResourceProperties;
 import cn.kduck.core.utils.PathUtils;
 import cn.kduck.core.web.annotation.ModelOperate;
 import cn.kduck.core.web.annotation.ModelResource;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.BeansException;
@@ -14,7 +14,7 @@ import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.BeanFactoryAware;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.AutoConfigurationPackages;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.core.io.Resource;
@@ -24,15 +24,14 @@ import org.springframework.core.type.ClassMetadata;
 import org.springframework.core.type.classreading.CachingMetadataReaderFactory;
 import org.springframework.core.type.classreading.MetadataReader;
 import org.springframework.core.type.classreading.MetadataReaderFactory;
-import org.springframework.util.ClassUtils;
-import org.springframework.util.DigestUtils;
-import org.springframework.util.ReflectionUtils;
-import org.springframework.util.StringUtils;
+import org.springframework.util.*;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
+import java.security.CodeSource;
+import java.security.ProtectionDomain;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -47,21 +46,32 @@ public class ModelResourceLoader implements InitializingBean, BeanFactoryAware {
 
     private ObjectMapper om = new ObjectMapper();
 
-    @Value("${kduck.resource.basePackage:}")
-    private String[] packagesToScan;
+//    @Value("${kduck.resource.basePackage:}")
+//    private String[] packagesToScan;
 
     private final List<ModelResourceProcessor> resourceProcessorList;
     private BeanFactory beanFactory;
+
+    @Autowired
+    private KduckProperties kduckProperties;
 
     public ModelResourceLoader(ObjectProvider<ModelResourceProcessor> resourceProcessorProvider){
         this.resourceProcessorList = Collections.unmodifiableList(new ArrayList<>(resourceProcessorProvider.stream().collect(Collectors.toList())));;
     }
 
     private void load(){
+        ResourceProperties resourceProperties = kduckProperties.getResource();
+        String[] packagesToScan = null;
+        if(resourceProperties != null){
+            packagesToScan = resourceProperties.getBasePackage();
+        }
+
         if(packagesToScan == null || packagesToScan.length == 0){
             List<String> packages = AutoConfigurationPackages.get(this.beanFactory);
             packagesToScan = packages.toArray(new String[0]);
-            logger.info("未配置资源类扫描路径（kduck.resource.basePackage），使用默认路径：" + packagesToScan);
+            if(logger.isInfoEnabled()){
+                logger.info("未配置资源类扫描路径（kduck.resource.basePackage），使用默认路径：" + Arrays.toString(packagesToScan));
+            }
         }
 
         int total = 0;
@@ -95,15 +105,36 @@ public class ModelResourceLoader implements InitializingBean, BeanFactoryAware {
                         continue;
                     }
 
-                    Class<?> clazz;
-                    try {
-                        clazz = Class.forName(classMetadata.getClassName(),false,this.getClass().getClassLoader());
-                    } catch (Throwable e) {
-                        //TODO i18n
-                        logger.debug("类不存在或无法实例化（比如依赖的import类文件不存在）："+classMetadata.getClassName(), e);
+                    String className = classMetadata.getClassName();
+
+                    if(className.startsWith("cn.kduck.core") || className.startsWith("cn.kduck.security")){
                         continue;
                     }
-                    ResourceValueMap r = processResource(clazz);
+
+                    Class<?> clazz;
+                    try {
+                        clazz = Class.forName(className,false,this.getClass().getClassLoader());
+                    } catch (Throwable e) {
+                        //TODO i18n
+                        logger.debug("类不存在或无法实例化（比如依赖的import类文件不存在）："+ className, e);
+                        continue;
+                    }
+
+                    String resourceGroup = resourceProperties == null ? null : resourceProperties.getResourceGroup();
+                    //是否跳过扫描在jar中的资源模块
+                    boolean skipInJar = resourceProperties == null ? true : resourceProperties.isSkipInJar();
+                    if(skipInJar){
+                        ProtectionDomain protectionDomain = clazz.getProtectionDomain();
+                        CodeSource codeSource = protectionDomain.getCodeSource();
+                        if (codeSource != null && codeSource.getLocation() != null) {
+                            String classLocation = codeSource.getLocation().toString();
+                            if (classLocation.contains("/BOOT-INF/lib") || classLocation.endsWith(".jar")) {
+                                continue;
+                            }
+                        }
+                    }
+
+                    ResourceValueMap r = processResource(resourceGroup,clazz);
 
                     if(r != null){
                         total++;
@@ -144,7 +175,7 @@ public class ModelResourceLoader implements InitializingBean, BeanFactoryAware {
      * @param clazz
      * @return
      */
-    private ResourceValueMap processResource(Class<?> clazz) {
+    private ResourceValueMap processResource(String resourceGroup,Class<?> clazz) {
         ModelResource resourceAnno = AnnotationUtils.findAnnotation(clazz, ModelResource.class);
         if(resourceAnno != null){
             RequestMapping requestMappingAnno = AnnotationUtils.findAnnotation(clazz,RequestMapping.class);
@@ -152,22 +183,19 @@ public class ModelResourceLoader implements InitializingBean, BeanFactoryAware {
 
             ResourceValueMap resource = new ResourceValueMap();
 
+            String resCode = ObjectUtils.isEmpty(resourceAnno.code()) ? clazz.getName() : resourceAnno.code();
+
             if(StringUtils.hasText(resourceAnno.value())){
                 resource.setResourceName(resourceAnno.value());
             } else {
-                //如果swagger注解存在，则尝试从swagger注解中获取模块名称
-                Api swaggerApi = AnnotationUtils.findAnnotation(clazz, Api.class);
-                if(swaggerApi != null){
-                    String moduleName = StringUtils.hasText(swaggerApi.tags()[0]) ? swaggerApi.tags()[0] : swaggerApi.value();
-                    resource.setResourceName(moduleName);
-                }
-                if(!StringUtils.hasText(resource.getResourceName())){
-                    throw new IllegalArgumentException("标记@ModelResource注解必须指定模块名称：" + clazz.getName());
-                }
+                resource.setResourceName(resCode);
             }
 
+            String group = resourceAnno.group();
+            group = "".equals(group) ? resourceGroup : group;
 
-            String resCode = StringUtils.isEmpty(resourceAnno.code()) ? clazz.getName() : resourceAnno.code();
+            resource.setResourceGroup(group);
+            resource.setVersion(resourceAnno.version());
             resource.setResourceCode(resCode);
 
             List<OperateValueMap> resourceOperates = null;
@@ -288,19 +316,15 @@ public class ModelResourceLoader implements InitializingBean, BeanFactoryAware {
     private OperateValueMap getOperateValueMap(String operatePath,ModelOperate optAnno,Method method){
         OperateValueMap resOpt = new OperateValueMap();
 
+        String optCode = ObjectUtils.isEmpty(optAnno.code()) ? method.getName() : optAnno.code();
+
         if(StringUtils.hasText(optAnno.name())){
             resOpt.setOperateName(optAnno.name());
         }else{
-            ApiOperation swaggerOperation = AnnotationUtils.findAnnotation(method, ApiOperation.class);
-            if(swaggerOperation != null && StringUtils.hasText(swaggerOperation.value())){
-                resOpt.setOperateName(swaggerOperation.value());
-            }
-            if(!StringUtils.hasText(resOpt.getOperateName())){
-                throw new IllegalArgumentException("标记@ModelOperate注解必须指定操作名称：class=" + method.getDeclaringClass().getName() + ",method=" + method.getName());
-            }
+            resOpt.setOperateName(optCode);
         }
 
-        String optCode = StringUtils.isEmpty(optAnno.code()) ? method.getName() : optAnno.code();
+
         resOpt.setOperateCode(optCode);
         resOpt.setOperatePath(operatePath);
         resOpt.setGroupCode(optAnno.group());

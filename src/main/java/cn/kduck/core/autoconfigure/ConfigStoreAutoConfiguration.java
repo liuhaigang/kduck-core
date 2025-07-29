@@ -12,7 +12,7 @@ import org.springframework.context.annotation.Configuration;
 public class ConfigStoreAutoConfiguration {
 
     @Bean
-    public ConfigStoreScannerConfigurer ConfigStoreScannerConfigurer(){
+    public static ConfigStoreScannerConfigurer configStoreScannerConfigurer(){
         return new ConfigStoreScannerConfigurer();
     }
 }

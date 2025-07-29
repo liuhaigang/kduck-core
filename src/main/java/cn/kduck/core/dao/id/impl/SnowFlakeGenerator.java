@@ -7,7 +7,6 @@ import org.springframework.stereotype.Component;
 import java.io.Serializable;
 
 /**
- * https://www.jianshu.com/p/2aa82d70c99b
  * https://www.sohu.com/a/232008315_453160
  * @author LiuHG
  */
@@ -85,9 +84,9 @@ public class SnowFlakeGenerator implements IdGenerator {
             throw new IllegalArgumentException(
                     String.format("datacenter Id can't be greater than %d or less than 0", maxDatacenterId));
         }
-        System.out.printf(
-                "worker starting. timestamp left shift %d, datacenter id bits %d, worker id bits %d, sequence bits %d, workerid %d",
-                timestampLeftShift, datacenterIdBits, workerIdBits, sequenceBits, workerId);
+//        System.out.printf(
+//                "worker starting. timestamp left shift %d, datacenter id bits %d, worker id bits %d, sequence bits %d, workerid %d",
+//                timestampLeftShift, datacenterIdBits, workerIdBits, sequenceBits, workerId);
 
         this.workerId = workerId;
         this.datacenterId = datacenterId;
